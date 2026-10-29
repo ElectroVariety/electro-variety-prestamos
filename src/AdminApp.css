@@ -28,3 +28,8 @@
 .admin-message { background:#e7f3ff; color:#164f7e; }
 .admin-shell button:focus-visible, .admin-login input:focus-visible, .admin-heading select:focus-visible { outline:3px solid var(--brand-electric); outline-offset:2px; }
 @media(max-width:560px) { .admin-logo { width:52px; height:52px; } .admin-top { gap:12px; } .admin-brand { gap:8px; } .admin-brand b { font-size:12px; } }
+
+.admin-note-label { display:block; margin-bottom:10px; color:var(--brand-graphite); font-size:13px; font-weight:700; }
+.admin-note-input { box-sizing:border-box; width:100%; min-height:76px; padding:11px 12px; border:1px solid var(--brand-silver); border-radius:9px; color:var(--brand-graphite); font:inherit; resize:vertical; }
+.admin-note-input:focus-visible { outline:3px solid var(--brand-electric); outline-offset:2px; }
+.detail-subsection > p { margin:7px 0; overflow-wrap:anywhere; }
