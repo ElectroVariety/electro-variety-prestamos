@@ -48,3 +48,5 @@
 .delete-button:disabled { opacity:.55; cursor:wait; }
 .delete-button:hover { background:#fff0f0; }
 @media(max-width:560px) { .delete-actions { justify-content:stretch; } .delete-button { width:100%; } }
+
+.whatsapp-delivery-status { display:grid; gap:9px; }
