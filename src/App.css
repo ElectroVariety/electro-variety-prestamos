@@ -646,3 +646,12 @@ body { background: radial-gradient(ellipse at 50% -20%, #fffaf1 0, #f8f4ed 58%);
 .submit-button, button[type="submit"] { background: linear-gradient(135deg, #bd8134, #8d5b20); }
 .submit-button:hover, button[type="submit"]:hover { filter: brightness(.96); }
 @media (max-width: 560px) { .brand-name strong { letter-spacing: .035em; } }
+
+
+/* Improve contrast on the warm Préstamos Variety theme */
+.hero { color: #3f301c; }
+.eyebrow { color: #80551f; }
+.hero > p { color: #5c4c37; }
+.notice { border-color: #e4ceb0; background: #fff8ed; color: #574631; }
+.notice b { color: #3f301c; }
+.section-heading h2 { color: #29251f; }
