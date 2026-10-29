@@ -144,6 +144,7 @@ Deno.serve(async (req: Request) => {
   const hasDebts = body.has_debts;
   const serviceOwner = body.service_owner;
   const privacyAccepted = body.privacy_accepted;
+  const locationGeocodingConsent = body.location_geocoding_consent;
   const dniUpdated = body.dni_updated;
   const loanAmount = numberField(body.loan_amount);
   const loanFrequency = textField(body, "loan_frequency", 20);
@@ -194,7 +195,8 @@ Deno.serve(async (req: Request) => {
   if (!["own", "rent_contract", "rent_verbal"].includes(housingType)) {
     return respond({ error: "El tipo de vivienda no es válido." }, 400, origin);
   }
-  if (typeof hasDebts !== "boolean" || privacyAccepted !== true) {
+  if (typeof hasDebts !== "boolean" || privacyAccepted !== true ||
+      (locationGeocodingConsent !== undefined && typeof locationGeocodingConsent !== "boolean")) {
     return respond({ error: "Falta completar una opción obligatoria o aceptar el aviso de privacidad." }, 400, origin);
   }
   if (!Array.isArray(serviceTypes) || serviceTypes.length < 1 || !serviceTypes.every((v) =>
@@ -343,6 +345,7 @@ Deno.serve(async (req: Request) => {
     total_to_pay: totalToPay,
     loan_purpose: loanPurpose,
     privacy_accepted: true,
+    location_geocoding_consent: locationGeocodingConsent === true,
     status: "pending",
   };
 
