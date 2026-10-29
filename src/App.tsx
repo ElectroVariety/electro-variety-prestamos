@@ -151,7 +151,7 @@ function Upload({
     setError('')
     if (inputRef.current) inputRef.current.value = ''
   }, [resetKey])
-  const maxFileSize = 20 * 1024 * 1024
+  const maxFileSize = 5 * 1024 * 1024
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? [])
@@ -545,8 +545,8 @@ function App() {
               {[
                 { value: 'edesur', label: 'Edesur' },
                 { value: 'metrogas', label: 'Metrogas' },
-                { value: 'internet', label: 'Internet' },
-                { value: 'mobile', label: 'Abono de celular' },
+                { value: 'water', label: 'Agua' },
+                { value: 'other', label: 'Otro' },
                 { value: 'none', label: 'Ninguno a mi nombre' },
               ].map((option) => (
                 <label className="choice" key={option.value}>
