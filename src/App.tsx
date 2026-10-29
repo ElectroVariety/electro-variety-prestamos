@@ -944,7 +944,7 @@ function App() {
               onChange={(event) => setWhatsappRejectionConsent(event.target.checked)}
             />
             <span>
-              Acepto recibir por WhatsApp una notificación sobre el resultado de mi solicitud desde un número de Préstamos Variety. Es opcional; puedo retirar mi consentimiento contactando a Préstamos Variety.
+              Acepto recibir por WhatsApp una notificación sobre el resultado de mi solicitud desde un número de Préstamos Variety.
             </span>
           </label>
 
