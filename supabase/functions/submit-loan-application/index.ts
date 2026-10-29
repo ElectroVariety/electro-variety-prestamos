@@ -198,7 +198,7 @@ Deno.serve(async (req: Request) => {
     return respond({ error: "Falta completar una opción obligatoria o aceptar el aviso de privacidad." }, 400, origin);
   }
   if (!Array.isArray(serviceTypes) || serviceTypes.length < 1 || !serviceTypes.every((v) =>
-    typeof v === "string" && ["edesur", "metrogas", "water", "other", "none"].includes(v))) {
+    typeof v === "string" && ["edesur", "metrogas", "water", "other", "internet", "mobile", "none"].includes(v))) {
     return respond({ error: "Los servicios seleccionados no son válidos." }, 400, origin);
   }
   if (new Set(serviceTypes).size !== serviceTypes.length ||
