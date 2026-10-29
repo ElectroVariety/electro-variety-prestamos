@@ -211,7 +211,7 @@ export default function AdminApp() {
     }
   }
 
-  const whatsAppDigits = whatsAppNumber.replace(/\\D/g, '')
+  const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
   const whatsAppMessage = whatsAppApplicant
     ? `Hola ${whatsAppApplicant.full_name}. Te informamos que tu solicitud de préstamo por ${money(whatsAppApplicant.loan_amount)} fue aprobada. El plan solicitado es de ${whatsAppApplicant.installment_count} cuotas ${whatsAppApplicant.loan_frequency === 'weekly' ? 'semanales' : whatsAppApplicant.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'} de ${money(whatsAppApplicant.installment_amount)}. Respondé a este mensaje para coordinar los próximos pasos. — Préstamos Variety.`
     : ''
@@ -257,7 +257,7 @@ export default function AdminApp() {
           <label>Mensaje
             <textarea rows={4} readOnly value={whatsAppMessage} />
           </label>
-          {/^549\\d{10}$/.test(whatsAppDigits)
+          {/^549\d{10}$/.test(whatsAppDigits)
             ? <a className="whatsapp-link" href={`https://wa.me/${whatsAppDigits}?text=${encodeURIComponent(whatsAppMessage)}`} target="_blank" rel="noreferrer">Abrir chat en WhatsApp</a>
             : <p className="whatsapp-hint">Ingresá el celular con código de país y característica, solo números (Argentina: 549 + 10 dígitos).</p>}
           <button className="whatsapp-dismiss" onClick={() => { setWhatsAppApplicant(null); setWhatsAppNumber('') }}>Cerrar aviso</button>
