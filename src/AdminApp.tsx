@@ -39,6 +39,11 @@ type Application = {
   decided_at: string | null
   decided_by: string | null
   admin_notes: string | null
+  whatsapp_rejection_opt_in: boolean
+  whatsapp_rejection_status: string
+  whatsapp_rejection_sent_at: string | null
+  whatsapp_rejection_message_id: string | null
+  whatsapp_rejection_error_code: string | null
   incomes: Record<string, unknown>[]
   documents: Document[]
 }
@@ -165,9 +170,21 @@ export default function AdminApp() {
     setError('')
     setNotice('')
     try {
-      await callAdmin({ action: 'decide', application_id: selected.id, status, admin_notes: decisionNote })
+      const result = await callAdmin({ action: 'decide', application_id: selected.id, status, admin_notes: decisionNote })
       setDecisionNote('')
-      setNotice('Solicitud ' + (status === 'approved' ? 'aprobada.' : 'rechazada.'))
+      if (status === 'rejected') {
+        const delivery = result.notification?.status
+        const deliveryNotice: Record<string, string> = {
+          sent: 'Solicitud rechazada y aviso enviado por WhatsApp.',
+          pending: 'Solicitud rechazada. El aviso quedó pendiente de configurar WhatsApp Cloud API.',
+          failed: 'Solicitud rechazada, pero no se pudo enviar el aviso. Podés revisar el estado y reintentar desde la solicitud.',
+          unknown: 'Solicitud rechazada. No se pudo confirmar si WhatsApp recibió el aviso; revisá el estado antes de reintentar.',
+          not_eligible: 'Solicitud rechazada. No se envió el aviso porque no hay consentimiento de WhatsApp.',
+        }
+        setNotice(deliveryNotice[String(delivery)] || 'Solicitud rechazada.')
+      } else {
+        setNotice('Solicitud aprobada.')
+      }
       if (status === 'approved') {
         setWhatsAppApplicant(selected)
         setWhatsAppNumber(formatWhatsAppNumber(selected.phone))
@@ -192,6 +209,29 @@ export default function AdminApp() {
   const prepareWhatsAppMessage = (application: Application) => {
     setWhatsAppApplicant(application)
     setWhatsAppNumber(formatWhatsAppNumber(application.phone))
+  }
+
+  const retryRejectionWhatsApp = async () => {
+    if (!selected) return
+    setLoading(true)
+    setError('')
+    setNotice('')
+    try {
+      const result = await callAdmin({ action: 'retry_rejection_whatsapp', application_id: selected.id })
+      const status = String(result.notification?.status || '')
+      const deliveryNotice: Record<string, string> = {
+        sent: 'El aviso de rechazo se envió por WhatsApp.',
+        pending: 'El aviso sigue pendiente: falta completar la configuración de WhatsApp Cloud API.',
+        failed: 'Meta rechazó el envío. Revisá la configuración y volvé a intentar.',
+        unknown: 'No se pudo confirmar si Meta recibió el aviso. No lo reintentes hasta revisar el estado en Meta.',
+      }
+      setNotice(deliveryNotice[status] || 'Se actualizó el estado del aviso.')
+      await loadApplications()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo reintentar el aviso.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const deleteApplication = async () => {
@@ -322,6 +362,30 @@ export default function AdminApp() {
                   {selected.decided_at && <p><b>Fecha:</b> {new Date(selected.decided_at).toLocaleString('es-AR')}</p>}
                   {selected.decided_by && <p><b>Cuenta administradora:</b> {selected.decided_by === session.user.id ? session.user.email || selected.decided_by : selected.decided_by}</p>}
                   {selected.admin_notes && <p><b>Nota interna:</b> {selected.admin_notes}</p>}
+                </div>
+              )}
+              {selected.status === 'rejected' && (
+                <div className="detail-subsection">
+                  <h3>Aviso de rechazo por WhatsApp</h3>
+                  {!selected.whatsapp_rejection_opt_in
+                    ? <p>No se envió: la persona no aceptó recibir el aviso por WhatsApp.</p>
+                    : <>
+                        <p><b>Estado:</b> {{
+                          pending: 'Pendiente de configuración',
+                          sending: 'En proceso',
+                          sent: 'Enviado',
+                          failed: 'Falló el envío',
+                          unknown: 'No se pudo confirmar el resultado',
+                          not_eligible: 'Sin consentimiento',
+                        }[selected.whatsapp_rejection_status] || selected.whatsapp_rejection_status}</p>
+                        {selected.whatsapp_rejection_sent_at && <p><b>Fecha de envío:</b> {new Date(selected.whatsapp_rejection_sent_at).toLocaleString('es-AR')}</p>}
+                        {selected.whatsapp_rejection_error_code && <p><b>Detalle técnico:</b> {selected.whatsapp_rejection_error_code}</p>}
+                        {(selected.whatsapp_rejection_status === 'pending' || selected.whatsapp_rejection_status === 'failed') && (
+                          <button className="whatsapp-prepare" disabled={loading} onClick={() => void retryRejectionWhatsApp()}>
+                            {selected.whatsapp_rejection_status === 'pending' ? 'Intentar envío por WhatsApp' : 'Reintentar aviso por WhatsApp'}
+                          </button>
+                        )}
+                      </>}
                 </div>
               )}
               {selected.status === 'approved' && (

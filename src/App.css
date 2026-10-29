@@ -667,3 +667,7 @@ body { background: var(--brand-pearl); color: var(--brand-graphite); }
 .submit-button:hover, button[type="submit"]:hover { background: var(--brand-electric); filter: none; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--brand-electric); }
 @media (max-width: 560px) { .brand-logo { width: 64px; height: 64px; } .brand-header { gap: 10px; } .brand-name strong { letter-spacing: .035em; } }
+
+.whatsapp-consent { display:flex; align-items:flex-start; gap:10px; margin:14px 0; padding:13px 14px; border:1px solid var(--brand-silver); border-radius:10px; background:#fff; color:var(--brand-graphite); font-size:13px; line-height:1.5; }
+.whatsapp-consent input { flex:none; width:18px; height:18px; margin:2px 0 0; accent-color:var(--brand-blue-deep); }
+.whatsapp-consent span { display:block; }
