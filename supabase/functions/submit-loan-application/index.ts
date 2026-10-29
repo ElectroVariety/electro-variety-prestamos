@@ -351,6 +351,12 @@ Deno.serve(async (req: Request) => {
   try {
     const { data: saved, error: appError } = await supabase
       .from("loan_applications").insert(application).select("id").single();
+    if (appError?.code === "P0001" && appError.message === "DNI_APPLICATION_PREVIOUSLY_REJECTED") {
+      return respond({
+        success: false,
+        error: "La solicitud anterior con este DNI fue rechazada. No es posible enviar otra solicitud.",
+      }, 409, origin);
+    }
     if (appError?.code === "P0001" && appError.message === "DNI_PENDING_APPLICATION_EXISTS") {
       return respond({
         success: false,
