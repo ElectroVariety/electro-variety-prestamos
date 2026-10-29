@@ -54,7 +54,22 @@ Deno.serve(async (request: Request) => {
     const id = typeof body.application_id === "string" ? body.application_id : "";
     const status = body.status;
     if (!id || (status !== "approved" && status !== "rejected")) return respond({ error: "La decisión indicada no es válida." }, 400, origin);
-    const { data, error } = await admin.from("loan_applications").update({ status }).eq("id", id).in("status", ["pending", "under_review"]).select("id").maybeSingle();
+    const rawNotes = body.admin_notes;
+    if (rawNotes !== undefined && typeof rawNotes !== "string") return respond({ error: "La nota interna no es válida." }, 400, origin);
+    const adminNotes = typeof rawNotes === "string" ? rawNotes.trim() : "";
+    if (adminNotes.length > 2000) return respond({ error: "La nota interna no puede superar 2000 caracteres." }, 400, origin);
+
+    const { data, error } = await admin.from("loan_applications")
+      .update({
+        status,
+        decided_at: new Date().toISOString(),
+        decided_by: authData.user.id,
+        admin_notes: adminNotes || null,
+      })
+      .eq("id", id)
+      .in("status", ["pending", "under_review"])
+      .select("id")
+      .maybeSingle();
     if (error) {
       console.error("No se pudo actualizar la solicitud:", error.message);
       return respond({ error: "No se pudo actualizar la solicitud." }, 500, origin);
