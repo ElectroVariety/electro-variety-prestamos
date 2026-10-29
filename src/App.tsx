@@ -151,7 +151,7 @@ function Upload({
     setError('')
     if (inputRef.current) inputRef.current.value = ''
   }, [resetKey])
-  const maxFileSize = accept.includes('video') ? 90 * 1024 * 1024 : 15 * 1024 * 1024
+  const maxFileSize = 20 * 1024 * 1024
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? [])
