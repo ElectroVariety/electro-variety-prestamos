@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { supabase } from './lib/supabase'
+import brandLogo from './assets/prestamos-variety-logo.jpg'
 import './App.css'
 
 type IncomeType =
@@ -425,7 +426,7 @@ function App() {
   return (
     <main className="app-shell">
       <header className="brand-header">
-        <div className="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" role="img"><rect x="8" y="9" width="32" height="30" rx="7" fill="none" stroke="currentColor" strokeWidth="2.5"/><path d="M27 8 17 25h8l-4 15 11-19h-8l3-13Z" fill="currentColor"/></svg></div>
+        <img className="brand-logo" src={brandLogo} alt="Préstamos Variety" />
         <div className="brand-name">
           <strong>PRÉSTAMOS VARIETY</strong>
           <span>PRÉSTAMOS PERSONALES</span>
