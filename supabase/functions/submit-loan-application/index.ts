@@ -8,7 +8,7 @@ const allowedOrigins = new Set([
 
 const BUCKET = "loan-private-documents";
 const MAX_REQUEST_BYTES = 50 * 1024 * 1024;
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_FILES = 20;
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -198,7 +198,7 @@ Deno.serve(async (req: Request) => {
     return respond({ error: "Falta completar una opción obligatoria o aceptar el aviso de privacidad." }, 400, origin);
   }
   if (!Array.isArray(serviceTypes) || serviceTypes.length < 1 || !serviceTypes.every((v) =>
-    typeof v === "string" && ["edesur", "metrogas", "internet", "mobile", "none"].includes(v))) {
+    typeof v === "string" && ["edesur", "metrogas", "water", "other", "internet", "mobile", "none"].includes(v))) {
     return respond({ error: "Los servicios seleccionados no son válidos." }, 400, origin);
   }
   if (new Set(serviceTypes).size !== serviceTypes.length ||
@@ -280,7 +280,7 @@ Deno.serve(async (req: Request) => {
     const type = documentType(match[1]);
     if (!type) return respond({ error: "Se recibió un tipo de documento no permitido." }, 400, origin);
     if (value.size <= 0 || value.size > MAX_FILE_BYTES || !ALLOWED_MIME.has(value.type)) {
-      return respond({ error: `El archivo "${safeFilename(value.name)}" está vacío, supera 20 MB o tiene un formato no permitido.` }, 400, origin);
+      return respond({ error: `El archivo "${safeFilename(value.name)}" está vacío, supera 5 MB o tiene un formato no permitido.` }, 400, origin);
     }
     totalBytes += value.size;
     files.push({ key: match[1], index: Number(match[2]), file: value, type });
