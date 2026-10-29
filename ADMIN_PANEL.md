@@ -1,6 +1,6 @@
 # Panel de administración
 
-El panel se publica en https://electrovariety.github.io/electro-variety-prestamos/#/admin. Inicia sesión con Supabase Auth; solo las cuentas registradas en public.loan_admin_users pueden consultar solicitudes o decidirlas.
+El panel se publica en https://electrovariety.github.io/prestamos-variety/#/admin. Inicia sesión con Supabase Auth; solo las cuentas registradas en public.loan_admin_users pueden consultar solicitudes o decidirlas.
 
 ## Acceso de administradores
 
