@@ -36,6 +36,8 @@ type Application = {
   total_to_pay: number
   loan_purpose: string
   status: string
+  decided_at: string | null
+  decided_by: string | null
   admin_notes: string | null
   incomes: Record<string, unknown>[]
   documents: Document[]
@@ -87,6 +89,7 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [decisionNote, setDecisionNote] = useState('')
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -107,6 +110,7 @@ export default function AdminApp() {
     if (!session) return
     setLoading(true)
     setError('')
+    setDecisionNote('')
     try {
       const data = await callAdmin({ action: 'list', status: filter })
       const rows = (data.applications ?? []) as Application[]
@@ -138,7 +142,8 @@ export default function AdminApp() {
     setError('')
     setNotice('')
     try {
-      await callAdmin({ action: 'decide', application_id: selected.id, status })
+      await callAdmin({ action: 'decide', application_id: selected.id, status, admin_notes: decisionNote })
+      setDecisionNote('')
       setNotice('Solicitud ' + (status === 'approved' ? 'aprobada.' : 'rechazada.'))
       setSelected(null)
       await loadApplications()
@@ -184,7 +189,7 @@ export default function AdminApp() {
           {loading && <p className="admin-empty">Cargando…</p>}
           {!loading && applications.length === 0 && <p className="admin-empty">No hay solicitudes en este filtro.</p>}
           {applications.map((application) => (
-            <button className={'application-row ' + (selected?.id === application.id ? 'is-selected' : '')} key={application.id} onClick={() => setSelected(application)}>
+            <button className={'application-row ' + (selected?.id === application.id ? 'is-selected' : '')} key={application.id} onClick={() => { setSelected(application); setDecisionNote('') }}>
               <span className={'status-dot status-' + application.status} />
               <span className="application-summary"><b>{application.full_name}</b><small>DNI {application.dni} · {new Date(application.created_at).toLocaleDateString('es-AR')}</small></span>
               <strong>{money(application.loan_amount)}</strong>
@@ -223,7 +228,31 @@ export default function AdminApp() {
                   </a>
                 )) : <p>No hay documentos cargados.</p>}
               </div>
-              {(selected.status === 'pending' || selected.status === 'under_review') && <div className="decision-actions"><button disabled={loading} className="reject-button" onClick={() => void decide('rejected')}>Rechazar</button><button disabled={loading} className="approve-button" onClick={() => void decide('approved')}>Aprobar solicitud</button></div>}
+              {(selected.decided_at || selected.decided_by || selected.admin_notes) && (
+                <div className="detail-subsection">
+                  <h3>Registro de decisión</h3>
+                  {selected.decided_at && <p><b>Fecha:</b> {new Date(selected.decided_at).toLocaleString('es-AR')}</p>}
+                  {selected.decided_by && <p><b>Cuenta administradora:</b> {selected.decided_by === session.user.id ? session.user.email || selected.decided_by : selected.decided_by}</p>}
+                  {selected.admin_notes && <p><b>Nota interna:</b> {selected.admin_notes}</p>}
+                </div>
+              )}
+              {(selected.status === 'pending' || selected.status === 'under_review') && (
+                <>
+                  <div className="detail-subsection">
+                    <label className="admin-note-label" htmlFor="decision-note">Nota interna para esta decisión (opcional)</label>
+                    <textarea
+                      id="decision-note"
+                      className="admin-note-input"
+                      rows={3}
+                      maxLength={2000}
+                      value={decisionNote}
+                      onChange={(event) => setDecisionNote(event.target.value)}
+                    />
+                    <small>{decisionNote.length}/2000 caracteres</small>
+                  </div>
+                  <div className="decision-actions"><button disabled={loading} className="reject-button" onClick={() => void decide('rejected')}>Rechazar</button><button disabled={loading} className="approve-button" onClick={() => void decide('approved')}>Aprobar solicitud</button></div>
+                </>
+              )}
             </>
           )}
         </section>
