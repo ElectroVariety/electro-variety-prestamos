@@ -239,6 +239,7 @@ function App() {
   const [loanFrequency, setLoanFrequency] =
     useState<LoanFrequency>('weekly')
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  const [locationGeocodingConsent, setLocationGeocodingConsent] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File[]>>({})
   const [uploadResetKey, setUploadResetKey] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -367,6 +368,7 @@ function App() {
       total_to_pay: selectedPlan.installments * selectedPlan.amount,
       loan_purpose: value('loan_purpose'),
       privacy_accepted: privacyAccepted,
+      location_geocoding_consent: locationGeocodingConsent,
     }
 
     const body = new FormData()
@@ -410,6 +412,7 @@ function App() {
       setLoanAmount(500000)
       setLoanFrequency('weekly')
       setPrivacyAccepted(false)
+      setLocationGeocodingConsent(false)
     } catch (error) {
       console.error('Error al enviar solicitud:', error)
       setSubmitError(
@@ -935,9 +938,22 @@ function App() {
             </span>
           </label>
 
+          <label className="privacy-choice location-consent-choice">
+            <input
+              type="checkbox"
+              checked={locationGeocodingConsent}
+              onChange={(event) => setLocationGeocodingConsent(event.target.checked)}
+            />
+            <span>
+              Autorizo opcionalmente compartir mi calle, altura y localidad con
+              Mapbox para ubicar mi domicilio en un mapa que verá únicamente el
+              personal autorizado. Puedo enviar la solicitud aunque no marque esta opción.
+            </span>
+          </label>
+
           <p className="privacy-note">
-            Tus documentos deberán almacenarse de forma privada y utilizarse
-            únicamente para las finalidades informadas.
+            Tus documentos se almacenan de forma privada. La ubicación solo se consulta
+            si autorizás esta opción y el personal la solicita para evaluar la solicitud.
           </p>
         </section>
 
