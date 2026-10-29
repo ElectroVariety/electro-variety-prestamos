@@ -20,7 +20,7 @@ function loadLeaflet(): Promise<Leaflet> {
   if (window.L) return Promise.resolve(window.L)
   if (window.__leafletPromise) return window.__leafletPromise
 
-  window.__leafletPromise = new Promise((resolve, reject) => {
+  const pending = new Promise<Leaflet>((resolve, reject) => {
     const stylesheet = document.createElement('link')
     stylesheet.rel = 'stylesheet'
     stylesheet.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
@@ -39,7 +39,8 @@ function loadLeaflet(): Promise<Leaflet> {
     window.__leafletPromise = undefined
     throw error
   })
-  return window.__leafletPromise
+  window.__leafletPromise = pending
+  return pending
 }
 
 export default function ApplicationMap({ latitude, longitude }: { latitude: number; longitude: number }) {
