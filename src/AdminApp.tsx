@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import './AdminApp.css'
+import ApplicationMap from './ApplicationMap'
 
 type Document = {
   id: string
@@ -23,6 +24,9 @@ type Application = {
   address: string
   between_streets: string
   locality: string
+  location_geocoding_consent: boolean
+  location_latitude: number | null
+  location_longitude: number | null
   housing_type: string
   has_service_in_own_name: boolean
   service_types: string[]
@@ -130,6 +134,35 @@ export default function AdminApp() {
     if (signInError) setError('No se pudo iniciar sesión. Verificá tus datos.')
   }
 
+  const showLocation = async () => {
+    if (!selected) return
+    if (!selected.location_geocoding_consent) {
+      setError('La persona no autorizó compartir su domicilio con Mapbox para ubicarlo en el mapa.')
+      return
+    }
+    if (selected.location_latitude != null && selected.location_longitude != null) return
+    if (!window.confirm('Se enviarán calle, altura y localidad a Mapbox para ubicar el domicilio. ¿Continuar?')) return
+
+    setLoading(true)
+    setError('')
+    setNotice('')
+    try {
+      const result = await callAdmin({ action: 'geocode', application_id: selected.id })
+      const updated = {
+        ...selected,
+        location_latitude: Number(result.latitude),
+        location_longitude: Number(result.longitude),
+      }
+      setSelected(updated)
+      setApplications((current) => current.map((row) => row.id === updated.id ? updated : row))
+      setNotice('Ubicación encontrada y guardada para el panel administrativo.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo ubicar el domicilio.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const decide = async (status: 'approved' | 'rejected') => {
     if (!selected) return
     const verb = status === 'approved' ? 'aprobar' : 'rechazar'
@@ -210,6 +243,22 @@ export default function AdminApp() {
                 <div><small>Servicios a su nombre</small><b>{selected.has_service_in_own_name ? 'Sí' : 'No'}</b></div>
                 <div className="detail-wide"><small>Destino del préstamo</small><b>{selected.loan_purpose}</b></div>
                 {selected.has_debts && <div className="detail-wide"><small>Deudas declaradas</small><b>{selected.debt_reason} · {money(selected.debt_amount)}</b></div>}
+              </div>
+              <div className="detail-subsection location-map-section">
+                <h3>Ubicación exacta</h3>
+                <p>El punto se muestra solo en este panel. La consulta a Mapbox requiere autorización de la persona.</p>
+                {!selected.location_geocoding_consent ? (
+                  <p className="location-map-permission">La persona no autorizó compartir la dirección con Mapbox; no se puede geocodificar.</p>
+                ) : selected.location_latitude != null && selected.location_longitude != null ? (
+                  <>
+                    <p className="location-map-coordinates">Latitud {selected.location_latitude.toFixed(6)} · Longitud {selected.location_longitude.toFixed(6)}</p>
+                    <ApplicationMap latitude={selected.location_latitude} longitude={selected.location_longitude} />
+                  </>
+                ) : (
+                  <button className="location-map-button" onClick={() => void showLocation()} disabled={loading}>
+                    {loading ? 'Buscando ubicación…' : 'Consultar y mostrar en el mapa'}
+                  </button>
+                )}
               </div>
               <div className="detail-subsection">
                 <h3>Ingresos declarados</h3>
