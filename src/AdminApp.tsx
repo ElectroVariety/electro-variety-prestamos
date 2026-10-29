@@ -174,7 +174,7 @@ export default function AdminApp() {
       <section className="admin-heading">
         <div><p className="admin-kicker">GESTIÓN DE CRÉDITOS</p><h1>Solicitudes de préstamos</h1><p>Revisá los datos y documentos antes de tomar una decisión.</p></div>
         <select aria-label="Filtrar solicitudes" value={filter} onChange={(event) => setFilter(event.target.value)}>
-          <option value="pending">Pendientes</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="all">Todas</option>
+          <option value="pending">Pendientes</option><option value="under_review">En revisión</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="all">Todas</option>
         </select>
       </section>
       {(error || notice) && <p className={error ? 'admin-error' : 'admin-message'} role="status">{error || notice}</p>}
@@ -223,7 +223,7 @@ export default function AdminApp() {
                   </a>
                 )) : <p>No hay documentos cargados.</p>}
               </div>
-              {selected.status === 'pending' && <div className="decision-actions"><button disabled={loading} className="reject-button" onClick={() => void decide('rejected')}>Rechazar</button><button disabled={loading} className="approve-button" onClick={() => void decide('approved')}>Aprobar solicitud</button></div>}
+              {(selected.status === 'pending' || selected.status === 'under_review') && <div className="decision-actions"><button disabled={loading} className="reject-button" onClick={() => void decide('rejected')}>Rechazar</button><button disabled={loading} className="approve-button" onClick={() => void decide('approved')}>Aprobar solicitud</button></div>}
             </>
           )}
         </section>
