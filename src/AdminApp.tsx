@@ -170,7 +170,7 @@ export default function AdminApp() {
       setNotice('Solicitud ' + (status === 'approved' ? 'aprobada.' : 'rechazada.'))
       if (status === 'approved') {
         setWhatsAppApplicant(selected)
-        setWhatsAppNumber(selected.phone)
+        setWhatsAppNumber(formatWhatsAppNumber(selected.phone))
       }
       setSelected(null)
       await loadApplications()
@@ -182,9 +182,16 @@ export default function AdminApp() {
   }
 
 
+  const formatWhatsAppNumber = (phone: string) => {
+    const digits = phone.replace(/\\D/g, '')
+    if (digits.startsWith('549')) return `+${digits}`
+    if (digits.startsWith('54')) return `+549${digits.slice(2)}`
+    return `+549${digits}`
+  }
+
   const prepareWhatsAppMessage = (application: Application) => {
     setWhatsAppApplicant(application)
-    setWhatsAppNumber(application.phone)
+    setWhatsAppNumber(formatWhatsAppNumber(application.phone))
   }
 
   const deleteApplication = async () => {
@@ -213,7 +220,7 @@ export default function AdminApp() {
 
   const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
   const whatsAppMessage = whatsAppApplicant
-    ? `Hola ${whatsAppApplicant.full_name}. Te informamos que tu solicitud de préstamo por ${money(whatsAppApplicant.loan_amount)} fue aprobada. El plan solicitado es de ${whatsAppApplicant.installment_count} cuotas ${whatsAppApplicant.loan_frequency === 'weekly' ? 'semanales' : whatsAppApplicant.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'} de ${money(whatsAppApplicant.installment_amount)}. Respondé a este mensaje para coordinar los próximos pasos. — Préstamos Variety.`
+    ? `Hola ${whatsAppApplicant.full_name}. Revisamos tu solicitud y cumplís con las condiciones para acceder a un préstamo. Para continuar con el proceso, respondé este mensaje y un asesor te brindará el asesoramiento sobre los próximos pasos. — Préstamos Variety.`
     : ''
 
   if (!session) {
@@ -248,18 +255,18 @@ export default function AdminApp() {
       {whatsAppApplicant && (
         <section className="whatsapp-card" aria-label="Mensaje de aprobación por WhatsApp">
           <div>
-            <h2>Solicitud aprobada: avisar por WhatsApp</h2>
+            <h2>Continuar el asesoramiento por WhatsApp</h2>
             <p>Revisá el número y el texto. WhatsApp Business se abrirá para que confirmes el envío.</p>
           </div>
-          <label>Número de WhatsApp en formato internacional
-            <input type="tel" value={whatsAppNumber} onChange={(event) => setWhatsAppNumber(event.target.value)} placeholder="Ej.: 54911…" />
+          <label>Número de WhatsApp
+            <input type="tel" value={whatsAppNumber} onChange={(event) => setWhatsAppNumber(event.target.value)} placeholder="+549…" />
           </label>
           <label>Mensaje
             <textarea rows={4} readOnly value={whatsAppMessage} />
           </label>
           {/^549\d{10}$/.test(whatsAppDigits)
             ? <a className="whatsapp-link" href={`https://wa.me/${whatsAppDigits}?text=${encodeURIComponent(whatsAppMessage)}`} target="_blank" rel="noreferrer">Abrir chat en WhatsApp</a>
-            : <p className="whatsapp-hint">Ingresá el celular con código de país y característica, solo números (Argentina: 549 + 10 dígitos).</p>}
+            : <p className="whatsapp-hint">El número se prepara con el prefijo +549. Corregilo si hace falta; para Argentina debe tener +549 y 10 dígitos.</p>}
           <button className="whatsapp-dismiss" onClick={() => { setWhatsAppApplicant(null); setWhatsAppNumber('') }}>Cerrar aviso</button>
         </section>
       )}
