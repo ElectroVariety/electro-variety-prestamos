@@ -170,8 +170,21 @@ Deno.serve(async (req: Request) => {
     return respond({ error: "El monto solicitado no es válido." }, 400, origin);
   }
 
-  const expectedCount = loanFrequency === "weekly" ? 20 : loanFrequency === "fortnightly" ? 10 : loanFrequency === "monthly" ? 5 : 0;
-  const expectedInstallment = loanAmount * 2.25 / expectedCount;
+  const serverPlans: Record<number, Record<string, { count: number; amount: number }>> = {
+    100000: { weekly: { count: 20, amount: 12000 }, fortnightly: { count: 10, amount: 23000 }, monthly: { count: 5, amount: 45000 } },
+    200000: { weekly: { count: 20, amount: 23000 }, fortnightly: { count: 10, amount: 45000 }, monthly: { count: 5, amount: 90000 } },
+    300000: { weekly: { count: 20, amount: 34000 }, fortnightly: { count: 10, amount: 68000 }, monthly: { count: 5, amount: 135000 } },
+    400000: { weekly: { count: 20, amount: 45000 }, fortnightly: { count: 10, amount: 90000 }, monthly: { count: 5, amount: 180000 } },
+    500000: { weekly: { count: 20, amount: 57000 }, fortnightly: { count: 10, amount: 113000 }, monthly: { count: 5, amount: 225000 } },
+    600000: { weekly: { count: 20, amount: 68000 }, fortnightly: { count: 10, amount: 135000 }, monthly: { count: 5, amount: 270000 } },
+    700000: { weekly: { count: 20, amount: 79000 }, fortnightly: { count: 10, amount: 158000 }, monthly: { count: 5, amount: 315000 } },
+    800000: { weekly: { count: 20, amount: 90000 }, fortnightly: { count: 10, amount: 180000 }, monthly: { count: 5, amount: 360000 } },
+    900000: { weekly: { count: 20, amount: 102000 }, fortnightly: { count: 10, amount: 203000 }, monthly: { count: 5, amount: 405000 } },
+    1000000: { weekly: { count: 20, amount: 113000 }, fortnightly: { count: 10, amount: 225000 }, monthly: { count: 5, amount: 450000 } },
+  };
+  const expectedPlan = serverPlans[loanAmount]?.[String(loanFrequency)];
+  const expectedCount = expectedPlan?.count ?? 0;
+  const expectedInstallment = expectedPlan?.amount ?? 0;
   if (!expectedCount || installmentCount !== expectedCount ||
       installmentAmount !== expectedInstallment ||
       totalToPay !== installmentAmount * installmentCount) {
