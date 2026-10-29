@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "loan-private-documents";
+const PAGE_SIZE = 50;
 const origins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -67,7 +68,15 @@ Deno.serve(async (request: Request) => {
   const status = body.status;
   if (status !== "pending" && status !== "approved" && status !== "rejected" && status !== "all") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
 
-  let query = admin.from("loan_applications").select("*").order("created_at", { ascending: false }).limit(100);
+  const rawOffset = body.offset === undefined ? 0 : Number(body.offset);
+  if (!Number.isSafeInteger(rawOffset) || rawOffset < 0) return respond({ error: "La página solicitada no es válida." }, 400, origin);
+  const offset = rawOffset;
+
+  let query = admin.from("loan_applications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(offset, offset + PAGE_SIZE);
   if (status !== "all") query = query.eq("status", status);
   const { data: applications, error: listError } = await query;
   if (listError) {
@@ -76,7 +85,9 @@ Deno.serve(async (request: Request) => {
   }
 
   try {
-    const results = await Promise.all((applications ?? []).map(async (application) => {
+    const pageApplications = applications ?? [];
+    const hasMore = pageApplications.length > PAGE_SIZE;
+    const results = await Promise.all(pageApplications.slice(0, PAGE_SIZE).map(async (application) => {
       const [incomeResult, docsResult] = await Promise.all([
         admin.from("loan_income_sources").select("*").eq("application_id", application.id),
         admin.from("loan_documents").select("id,document_type,storage_path,original_filename,file_size_bytes").eq("application_id", application.id),
@@ -89,7 +100,7 @@ Deno.serve(async (request: Request) => {
       }));
       return { ...application, incomes: incomeResult.data ?? [], documents };
     }));
-    return respond({ success: true, applications: results }, 200, origin);
+    return respond({ success: true, applications: results, has_more: hasMore, next_offset: offset + results.length }, 200, origin);
   }
   catch (error) {
     console.error("No se pudieron preparar las solicitudes:", error instanceof Error ? error.message : error);
