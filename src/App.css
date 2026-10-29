@@ -629,3 +629,20 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Préstamos Variety visual refresh */
+:root { --green: #b87b2f; --green-dark: #704615; --green-soft: #fff4df; --border: #eadfcd; --muted: #796f62; background: #f8f4ed; color: #29251f; }
+body { background: radial-gradient(ellipse at 50% -20%, #fffaf1 0, #f8f4ed 58%); }
+.app-shell { max-width: 850px; }
+.brand-header { border-bottom: 1px solid #eadfcd; padding-bottom: 18px; }
+.brand-mark { background: linear-gradient(135deg, #d49b4c, #9e6521); color: white; box-shadow: 0 8px 20px #b87b2f33; }
+.brand-mark svg { width: 28px; height: 28px; }
+.brand-name strong { letter-spacing: .06em; }
+.hero { background: linear-gradient(135deg, #fffaf1, #f5e8d2); border: 1px solid #ebd9bd; }
+.hero h1 { color: #3f301c; }
+.section-number { color: #9e6521; background: #fff4df; }
+.amount-card { border-color: #d9b87e; background: linear-gradient(145deg, #fffaf1, #fff1d8); }
+.submit-button, button[type="submit"] { background: linear-gradient(135deg, #bd8134, #8d5b20); }
+.submit-button:hover, button[type="submit"]:hover { filter: brightness(.96); }
+@media (max-width: 560px) { .brand-name strong { letter-spacing: .035em; } }
