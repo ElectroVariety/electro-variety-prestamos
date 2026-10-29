@@ -378,7 +378,19 @@ function App() {
     setIsSubmitting(true)
     try {
       const { data, error } = await supabase.functions.invoke('submit-loan-application', { body })
-      if (error) throw new Error(error.message || 'No se pudo enviar la solicitud.')
+      if (error) {
+        let message = error.message || 'No se pudo enviar la solicitud.'
+        try {
+          const response = (error as { context?: unknown }).context
+          if (response instanceof Response) {
+            const responseBody = await response.clone().json()
+            if (typeof responseBody?.error === 'string') message = responseBody.error
+          }
+        } catch {
+          // Keep the original function error if the response has no JSON body.
+        }
+        throw new Error(message)
+      }
       if (!data || data.success !== true) {
         throw new Error(data?.error || 'El servidor no confirmó el registro de la solicitud.')
       }
