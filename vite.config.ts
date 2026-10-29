@@ -4,6 +4,6 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/electro-variety-prestamos/',
+  base: '/prestamos-variety/',
   plugins: [react()],
 })
