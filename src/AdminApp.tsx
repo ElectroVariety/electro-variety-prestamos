@@ -92,6 +92,8 @@ export default function AdminApp() {
   const [decisionNote, setDecisionNote] = useState('')
   const [hasMore, setHasMore] = useState(false)
   const [nextOffset, setNextOffset] = useState(0)
+  const [whatsAppApplicant, setWhatsAppApplicant] = useState<Application | null>(null)
+  const [whatsAppNumber, setWhatsAppNumber] = useState('')
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -166,6 +168,10 @@ export default function AdminApp() {
       await callAdmin({ action: 'decide', application_id: selected.id, status, admin_notes: decisionNote })
       setDecisionNote('')
       setNotice('Solicitud ' + (status === 'approved' ? 'aprobada.' : 'rechazada.'))
+      if (status === 'approved') {
+        setWhatsAppApplicant(selected)
+        setWhatsAppNumber(selected.phone)
+      }
       setSelected(null)
       await loadApplications()
     } catch (cause) {
@@ -174,6 +180,41 @@ export default function AdminApp() {
       setLoading(false)
     }
   }
+
+
+  const prepareWhatsAppMessage = (application: Application) => {
+    setWhatsAppApplicant(application)
+    setWhatsAppNumber(application.phone)
+  }
+
+  const deleteApplication = async () => {
+    if (!selected) return
+    const name = selected.full_name
+    if (!window.confirm('Vas a eliminar permanentemente la solicitud de ' + name + ' y sus documentos. Esta acción no se puede deshacer. ¿Continuar?')) return
+    if (window.prompt('Para confirmar, escribí ELIMINAR') !== 'ELIMINAR') return
+    setLoading(true)
+    setError('')
+    setNotice('')
+    try {
+      await callAdmin({ action: 'delete', application_id: selected.id })
+      if (whatsAppApplicant?.id === selected.id) {
+        setWhatsAppApplicant(null)
+        setWhatsAppNumber('')
+      }
+      setSelected(null)
+      setNotice('La solicitud y sus documentos fueron eliminados permanentemente.')
+      await loadApplications()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo eliminar la solicitud.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
+  const whatsAppMessage = whatsAppApplicant
+    ? `Hola ${whatsAppApplicant.full_name}. Te informamos que tu solicitud de préstamo por ${money(whatsAppApplicant.loan_amount)} fue aprobada. El plan solicitado es de ${whatsAppApplicant.installment_count} cuotas ${whatsAppApplicant.loan_frequency === 'weekly' ? 'semanales' : whatsAppApplicant.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'} de ${money(whatsAppApplicant.installment_amount)}. Respondé a este mensaje para coordinar los próximos pasos. — Préstamos Variety.`
+    : ''
 
   if (!session) {
     return (
@@ -204,6 +245,24 @@ export default function AdminApp() {
         </select>
       </section>
       {(error || notice) && <p className={error ? 'admin-error' : 'admin-message'} role="status">{error || notice}</p>}
+      {whatsAppApplicant && (
+        <section className="whatsapp-card" aria-label="Mensaje de aprobación por WhatsApp">
+          <div>
+            <h2>Solicitud aprobada: avisar por WhatsApp</h2>
+            <p>Revisá el número y el texto. WhatsApp Business se abrirá para que confirmes el envío.</p>
+          </div>
+          <label>Número de WhatsApp en formato internacional
+            <input type="tel" value={whatsAppNumber} onChange={(event) => setWhatsAppNumber(event.target.value)} placeholder="Ej.: 54911…" />
+          </label>
+          <label>Mensaje
+            <textarea rows={4} readOnly value={whatsAppMessage} />
+          </label>
+          {/^549\d{10}$/.test(whatsAppDigits)
+            ? <a className="whatsapp-link" href={`https://wa.me/${whatsAppDigits}?text=${encodeURIComponent(whatsAppMessage)}`} target="_blank" rel="noreferrer">Abrir chat en WhatsApp</a>
+            : <p className="whatsapp-hint">Ingresá el celular con código de país y característica, solo números (Argentina: 549 + 10 dígitos).</p>}
+          <button className="whatsapp-dismiss" onClick={() => { setWhatsAppApplicant(null); setWhatsAppNumber('') }}>Cerrar aviso</button>
+        </section>
+      )}
       <div className="admin-layout">
         <section className="admin-list" aria-label="Listado de solicitudes">
           <div className="admin-list-header"><b>{applications.length} solicitudes cargadas</b><button onClick={() => void loadApplications()} disabled={loading}>Actualizar</button></div>
@@ -258,6 +317,11 @@ export default function AdminApp() {
                   {selected.admin_notes && <p><b>Nota interna:</b> {selected.admin_notes}</p>}
                 </div>
               )}
+              {selected.status === 'approved' && (
+                <div className="detail-subsection">
+                  <button className="whatsapp-prepare" onClick={() => prepareWhatsAppMessage(selected)}>Preparar mensaje por WhatsApp</button>
+                </div>
+              )}
               {(selected.status === 'pending' || selected.status === 'under_review') && (
                 <>
                   <div className="detail-subsection">
@@ -275,6 +339,7 @@ export default function AdminApp() {
                   <div className="decision-actions"><button disabled={loading} className="reject-button" onClick={() => void decide('rejected')}>Rechazar</button><button disabled={loading} className="approve-button" onClick={() => void decide('approved')}>Aprobar solicitud</button></div>
                 </>
               )}
+              <div className="delete-actions"><button disabled={loading} className="delete-button" onClick={() => void deleteApplication()}>Eliminar solicitud y documentos</button></div>
             </>
           )}
         </section>

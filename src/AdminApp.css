@@ -33,3 +33,18 @@
 .admin-note-input { box-sizing:border-box; width:100%; min-height:76px; padding:11px 12px; border:1px solid var(--brand-silver); border-radius:9px; color:var(--brand-graphite); font:inherit; resize:vertical; }
 .admin-note-input:focus-visible { outline:3px solid var(--brand-electric); outline-offset:2px; }
 .detail-subsection > p { margin:7px 0; overflow-wrap:anywhere; }
+
+.whatsapp-card { display:grid; gap:12px; margin:0 0 20px; padding:18px; border:1px solid #b8c3d1; border-radius:14px; background:#fff; box-shadow:0 12px 32px #252b3510; }
+.whatsapp-card h2 { margin:0 0 4px; color:#252b35; font-size:16px; }
+.whatsapp-card p { margin:0; color:#5e6978; font-size:12px; }
+.whatsapp-card label { display:grid; gap:7px; color:#252b35; font-size:12px; font-weight:700; }
+.whatsapp-card input,.whatsapp-card textarea { box-sizing:border-box; width:100%; padding:10px 12px; border:1px solid #b8c3d1; border-radius:8px; color:#252b35; font:inherit; font-weight:400; }
+.whatsapp-card textarea { resize:vertical; }
+.whatsapp-link,.whatsapp-prepare { display:inline-flex; justify-content:center; border:0; border-radius:8px; padding:11px 15px; background:#087b47; color:#fff; font-weight:700; text-decoration:none; cursor:pointer; }
+.whatsapp-hint { color:#8a5a13!important; }
+.whatsapp-dismiss { justify-self:start; border:0; background:transparent; color:#5e6978; text-decoration:underline; cursor:pointer; }
+.delete-actions { display:flex; justify-content:flex-end; padding-top:18px; }
+.delete-button { border:1px solid #e7b9b9; border-radius:8px; padding:10px 13px; background:#fff; color:#a43c3c; font-weight:700; cursor:pointer; }
+.delete-button:disabled { opacity:.55; cursor:wait; }
+.delete-button:hover { background:#fff0f0; }
+@media(max-width:560px) { .delete-actions { justify-content:stretch; } .delete-button { width:100%; } }

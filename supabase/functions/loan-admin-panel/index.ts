@@ -79,6 +79,50 @@ Deno.serve(async (request: Request) => {
     return respond({ success: true }, 200, origin);
   }
 
+  if (body.action === "delete") {
+    const id = typeof body.application_id === "string" ? body.application_id : "";
+    if (!id) return respond({ error: "La solicitud indicada no es válida." }, 400, origin);
+
+    const { data: existing, error: existingError } = await admin.from("loan_applications")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (existingError) {
+      console.error("No se pudo comprobar la solicitud a eliminar:", existingError.message);
+      return respond({ error: "No se pudo comprobar la solicitud." }, 500, origin);
+    }
+    if (!existing) return respond({ error: "La solicitud no existe o ya fue eliminada." }, 404, origin);
+
+    const { data: documents, error: documentsError } = await admin.from("loan_documents")
+      .select("storage_path")
+      .eq("application_id", id);
+    if (documentsError) {
+      console.error("No se pudieron localizar los documentos para eliminar:", documentsError.message);
+      return respond({ error: "No se pudieron preparar los documentos para su eliminación." }, 500, origin);
+    }
+
+    const storagePaths = (documents ?? []).map((document) => document.storage_path);
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await admin.storage.from(BUCKET).remove(storagePaths);
+      if (storageError) {
+        console.error("No se pudieron eliminar los documentos privados:", storageError.message);
+        return respond({ error: "No se pudieron eliminar los documentos. La solicitud sigue guardada." }, 500, origin);
+      }
+    }
+
+    const { data: deleted, error: deleteError } = await admin.from("loan_applications")
+      .delete()
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
+    if (deleteError) {
+      console.error("No se pudo eliminar la solicitud:", deleteError.message);
+      return respond({ error: "No se pudo eliminar la solicitud." }, 500, origin);
+    }
+    if (!deleted) return respond({ error: "La solicitud ya no está disponible." }, 404, origin);
+    return respond({ success: true }, 200, origin);
+  }
+
   if (body.action !== "list") return respond({ error: "La operación solicitada no es válida." }, 400, origin);
   const status = body.status;
   if (status !== "pending" && status !== "under_review" && status !== "approved" && status !== "rejected" && status !== "all") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
