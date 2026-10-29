@@ -323,7 +323,7 @@ Deno.serve(async (req: Request) => {
   const application = {
     whatsapp_rejection_opt_in: whatsappRejectionOptIn,
     whatsapp_rejection_opt_in_at: whatsappRejectionOptIn ? new Date().toISOString() : null,
-    whatsapp_rejection_consent_version: whatsappRejectionOptIn ? "20261029-v1" : null,
+    whatsapp_rejection_consent_version: whatsappRejectionOptIn ? "20261029-v2" : null,
     whatsapp_rejection_status: whatsappRejectionOptIn ? "pending" : "not_eligible",
     full_name: fullName,
     dni,
