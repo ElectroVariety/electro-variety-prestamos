@@ -15,6 +15,147 @@ function respond(body: Record<string, unknown>, status: number, origin: string) 
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+type RejectionNotificationState = "not_eligible" | "pending" | "sending" | "sent" | "failed" | "unknown";
+
+function normalizeWhatsAppRecipient(phone: string): string | null {
+  let digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  if (digits.startsWith("549") && digits.length === 13) return digits;
+  if (digits.startsWith("54") && digits.length === 12) digits = "549" + digits.slice(2);
+  if (digits.length === 10) digits = "549" + digits;
+  return /^549\d{10}$/.test(digits) ? digits : null;
+}
+
+async function sendRejectionNotification(
+  admin: ReturnType<typeof createClient>,
+  applicationId: string,
+  expectedState: "pending" | "failed",
+): Promise<{ status: RejectionNotificationState; error_code?: string }> {
+  const { data: application, error: readError } = await admin
+    .from("loan_applications")
+    .select("id,status,phone,whatsapp_rejection_opt_in,whatsapp_rejection_status")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (readError || !application) {
+    console.error("No se pudo leer la solicitud para el aviso de rechazo.");
+    return { status: "failed", error_code: "application_unavailable" };
+  }
+  if (application.status !== "rejected") {
+    return { status: application.whatsapp_rejection_status, error_code: "not_rejected" };
+  }
+  if (!application.whatsapp_rejection_opt_in) {
+    if (application.whatsapp_rejection_status === "pending") {
+      await admin.from("loan_applications")
+        .update({ whatsapp_rejection_status: "not_eligible", whatsapp_rejection_error_code: null })
+        .eq("id", applicationId)
+        .eq("whatsapp_rejection_status", "pending");
+    }
+    return { status: "not_eligible" };
+  }
+  if (application.whatsapp_rejection_status !== expectedState) {
+    return { status: application.whatsapp_rejection_status };
+  }
+
+  const accessToken = Deno.env.get("WHATSAPP_CLOUD_API_TOKEN");
+  const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+  const templateName = Deno.env.get("WHATSAPP_REJECTION_TEMPLATE_NAME");
+  const templateLanguage = Deno.env.get("WHATSAPP_REJECTION_TEMPLATE_LANGUAGE") ?? "es_AR";
+  const graphVersion = Deno.env.get("WHATSAPP_GRAPH_API_VERSION");
+  if (!accessToken || !phoneNumberId || !templateName || !graphVersion || !/^v\d+\.\d+$/.test(graphVersion)) {
+    return { status: "pending", error_code: "not_configured" };
+  }
+
+  const { data: claim, error: claimError } = await admin.from("loan_applications")
+    .update({ whatsapp_rejection_status: "sending", whatsapp_rejection_error_code: null })
+    .eq("id", applicationId)
+    .eq("status", "rejected")
+    .eq("whatsapp_rejection_opt_in", true)
+    .eq("whatsapp_rejection_status", expectedState)
+    .select("id")
+    .maybeSingle();
+  if (claimError) {
+    console.error("No se pudo reservar el envío del aviso de rechazo:", claimError.message);
+    return { status: "failed", error_code: "database_error" };
+  }
+  if (!claim) {
+    const { data: current } = await admin.from("loan_applications")
+      .select("whatsapp_rejection_status")
+      .eq("id", applicationId)
+      .maybeSingle();
+    return { status: current?.whatsapp_rejection_status ?? "unknown" };
+  }
+
+  const recipient = normalizeWhatsAppRecipient(application.phone);
+  if (!recipient) {
+    await admin.from("loan_applications")
+      .update({ whatsapp_rejection_status: "failed", whatsapp_rejection_error_code: "invalid_phone" })
+      .eq("id", applicationId)
+      .eq("whatsapp_rejection_status", "sending");
+    return { status: "failed", error_code: "invalid_phone" };
+  }
+
+  let response: Response;
+  let providerResult: Record<string, unknown> | null = null;
+  try {
+    response = await fetch("https://graph.facebook.com/" + graphVersion + "/" + phoneNumberId + "/messages", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipient,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: templateLanguage },
+        },
+      }),
+    });
+    providerResult = await response.json().catch(() => null);
+  } catch {
+    await admin.from("loan_applications")
+      .update({ whatsapp_rejection_status: "unknown", whatsapp_rejection_error_code: "network_unknown" })
+      .eq("id", applicationId)
+      .eq("whatsapp_rejection_status", "sending");
+    return { status: "unknown", error_code: "network_unknown" };
+  }
+
+  if (!response.ok) {
+    const providerError = providerResult?.error as Record<string, unknown> | undefined;
+    const providerCode = typeof providerError?.code === "number" || typeof providerError?.code === "string"
+      ? String(providerError.code).slice(0, 40)
+      : "provider_error";
+    const { error: updateError } = await admin.from("loan_applications")
+      .update({ whatsapp_rejection_status: "failed", whatsapp_rejection_error_code: providerCode })
+      .eq("id", applicationId)
+      .eq("whatsapp_rejection_status", "sending");
+    if (updateError) console.error("No se pudo registrar el fallo del aviso de rechazo:", updateError.message);
+    return { status: "failed", error_code: providerCode };
+  }
+
+  const messages = providerResult?.messages as Array<Record<string, unknown>> | undefined;
+  const messageId = typeof messages?.[0]?.id === "string" ? messages[0].id : null;
+  const sentAt = new Date().toISOString();
+  const { error: sentUpdateError } = await admin.from("loan_applications")
+    .update({
+      whatsapp_rejection_status: "sent",
+      whatsapp_rejection_sent_at: sentAt,
+      whatsapp_rejection_message_id: messageId,
+      whatsapp_rejection_error_code: null,
+    })
+    .eq("id", applicationId)
+    .eq("whatsapp_rejection_status", "sending");
+  if (sentUpdateError) {
+    console.error("Meta aceptó el aviso, pero no se pudo registrar el resultado:", sentUpdateError.message);
+    return { status: "unknown", error_code: "delivery_record_unknown" };
+  }
+  return { status: "sent" };
+}
+
+
 Deno.serve(async (request: Request) => {
   const origin = request.headers.get("origin") ?? "";
   if (request.method === "OPTIONS") {
@@ -76,7 +217,31 @@ Deno.serve(async (request: Request) => {
       return respond({ error: "No se pudo actualizar la solicitud." }, 500, origin);
     }
     if (!data) return respond({ error: "La solicitud ya fue revisada o no existe. Actualizá el listado." }, 409, origin);
+    if (status === "rejected") {
+      const notification = await sendRejectionNotification(admin, id, "pending");
+      return respond({ success: true, notification }, 200, origin);
+    }
     return respond({ success: true }, 200, origin);
+  }
+
+  if (body.action === "retry_rejection_whatsapp") {
+    const id = typeof body.application_id === "string" ? body.application_id : "";
+    if (!id) return respond({ error: "La solicitud indicada no es válida." }, 400, origin);
+    const { data: application, error } = await admin.from("loan_applications")
+      .select("id,status,whatsapp_rejection_opt_in,whatsapp_rejection_status")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) {
+      console.error("No se pudo consultar el estado del aviso:", error.message);
+      return respond({ error: "No se pudo consultar el estado del aviso." }, 500, origin);
+    }
+    if (!application || application.status !== "rejected") return respond({ error: "La solicitud no está rechazada." }, 409, origin);
+    if (!application.whatsapp_rejection_opt_in) return respond({ success: true, notification: { status: "not_eligible" } }, 200, origin);
+    if (application.whatsapp_rejection_status !== "pending" && application.whatsapp_rejection_status !== "failed") {
+      return respond({ success: true, notification: { status: application.whatsapp_rejection_status } }, 200, origin);
+    }
+    const notification = await sendRejectionNotification(admin, id, application.whatsapp_rejection_status);
+    return respond({ success: true, notification }, 200, origin);
   }
 
   if (body.action === "delete") {
