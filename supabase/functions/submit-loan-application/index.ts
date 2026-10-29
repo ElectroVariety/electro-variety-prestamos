@@ -351,6 +351,12 @@ Deno.serve(async (req: Request) => {
   try {
     const { data: saved, error: appError } = await supabase
       .from("loan_applications").insert(application).select("id").single();
+    if (appError?.code === "P0001" && appError.message === "DNI_PENDING_APPLICATION_EXISTS") {
+      return respond({
+        success: false,
+        error: "Ya tenés una solicitud pendiente con este DNI. Esperá a que la revisemos antes de enviar otra.",
+      }, 409, origin);
+    }
     if (appError || !saved) throw new Error(`No se pudo guardar la solicitud: ${appError?.message ?? "sin ID"}`);
     applicationId = String(saved.id);
 
