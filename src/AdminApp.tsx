@@ -87,6 +87,8 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [hasMore, setHasMore] = useState(false)
+  const [nextOffset, setNextOffset] = useState(0)
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -108,16 +110,35 @@ export default function AdminApp() {
     setLoading(true)
     setError('')
     try {
-      const data = await callAdmin({ action: 'list', status: filter })
+      const data = await callAdmin({ action: 'list', status: filter, offset: '0' })
       const rows = (data.applications ?? []) as Application[]
       setApplications(rows)
       setSelected((current) => current ? rows.find((row) => row.id === current.id) ?? null : null)
+      setHasMore(Boolean(data.has_more))
+      setNextOffset(Number(data.next_offset ?? rows.length))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las solicitudes.')
     } finally {
       setLoading(false)
     }
   }, [session, filter, callAdmin])
+
+  const loadMoreApplications = useCallback(async () => {
+    if (!session || loading || !hasMore) return
+    setLoading(true)
+    setError('')
+    try {
+      const data = await callAdmin({ action: 'list', status: filter, offset: String(nextOffset) })
+      const rows = (data.applications ?? []) as Application[]
+      setApplications((current) => [...current, ...rows])
+      setHasMore(Boolean(data.has_more))
+      setNextOffset(Number(data.next_offset ?? nextOffset + rows.length))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar más solicitudes.')
+    } finally {
+      setLoading(false)
+    }
+  }, [session, loading, hasMore, filter, nextOffset, callAdmin])
 
   useEffect(() => {
     void loadApplications()
@@ -180,7 +201,7 @@ export default function AdminApp() {
       {(error || notice) && <p className={error ? 'admin-error' : 'admin-message'} role="status">{error || notice}</p>}
       <div className="admin-layout">
         <section className="admin-list" aria-label="Listado de solicitudes">
-          <div className="admin-list-header"><b>{applications.length} solicitudes</b><button onClick={() => void loadApplications()} disabled={loading}>Actualizar</button></div>
+          <div className="admin-list-header"><b>{applications.length} solicitudes cargadas</b><button onClick={() => void loadApplications()} disabled={loading}>Actualizar</button></div>
           {loading && <p className="admin-empty">Cargando…</p>}
           {!loading && applications.length === 0 && <p className="admin-empty">No hay solicitudes en este filtro.</p>}
           {applications.map((application) => (
@@ -190,6 +211,7 @@ export default function AdminApp() {
               <strong>{money(application.loan_amount)}</strong>
             </button>
           ))}
+          {hasMore && <div className="admin-list-header"><button onClick={() => void loadMoreApplications()} disabled={loading}>{loading ? 'Cargando…' : 'Cargar más solicitudes'}</button></div>}
         </section>
         <section className="application-detail">
           {!selected ? <div className="admin-empty detail-placeholder">Elegí una solicitud para ver sus datos y documentación.</div> : (
