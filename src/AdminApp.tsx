@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import brandLogo from './assets/prestamos-variety-logo.jpg'
 import './AdminApp.css'
 
 type Document = {
@@ -152,7 +153,7 @@ export default function AdminApp() {
   if (!session) {
     return (
       <main className="admin-login">
-        <div className="admin-brand"><span>EV</span><div><b>ELECTRO VARIETY</b><small>Administración de préstamos</small></div></div>
+        <div className="admin-brand"><img className="admin-logo" src={brandLogo} alt="Préstamos Variety" /><div><b>PRÉSTAMOS VARIETY</b><small>Administración de préstamos</small></div></div>
         <form onSubmit={signIn}>
           <h1>Ingresar</h1>
           <p>Acceso exclusivo para personal autorizado.</p>
@@ -168,7 +169,7 @@ export default function AdminApp() {
   return (
     <main className="admin-shell">
       <header className="admin-top">
-        <div className="admin-brand"><span>EV</span><div><b>ELECTRO VARIETY</b><small>Panel de solicitudes</small></div></div>
+        <div className="admin-brand"><img className="admin-logo" src={brandLogo} alt="Préstamos Variety" /><div><b>PRÉSTAMOS VARIETY</b><small>Panel de solicitudes</small></div></div>
         <button className="admin-logout" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button>
       </header>
       <section className="admin-heading">
