@@ -79,7 +79,7 @@ Deno.serve(async (request: Request) => {
     const mapboxToken = Deno.env.get("MAPBOX_ACCESS_TOKEN");
     if (!mapboxToken) return respond({ error: "Falta configurar el geocodificador privado en Supabase." }, 503, origin);
 
-    const addressQuery = `${application.address}, ${application.locality}, Argentina`.replaceAll(";", " ").replace(/\\s+/g, " ").trim();
+    const addressQuery = `${application.address}, ${application.locality}, Argentina`.replaceAll(";", " ").replace(/\s+/g, " ").trim();
     if (addressQuery.length > 256) {
       return respond({ error: "El domicilio es demasiado extenso para ubicarlo. Revisá que contenga calle y altura." }, 422, origin);
     }
