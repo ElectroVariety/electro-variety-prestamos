@@ -667,3 +667,5 @@ body { background: var(--brand-pearl); color: var(--brand-graphite); }
 .submit-button:hover, button[type="submit"]:hover { background: var(--brand-electric); filter: none; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--brand-electric); }
 @media (max-width: 560px) { .brand-logo { width: 64px; height: 64px; } .brand-header { gap: 10px; } .brand-name strong { letter-spacing: .035em; } }
+
+.location-consent-choice{padding:10px 0;border-top:1px solid #e3e9f0}.location-consent-choice span{color:#344154}
