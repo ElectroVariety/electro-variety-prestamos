@@ -144,6 +144,9 @@ Deno.serve(async (req: Request) => {
   const hasDebts = body.has_debts;
   const serviceOwner = body.service_owner;
   const privacyAccepted = body.privacy_accepted;
+  const rawWhatsAppRejectionOptIn = body.whatsapp_rejection_opt_in;
+  const whatsappRejectionOptIn = rawWhatsAppRejectionOptIn === true;
+  if (rawWhatsAppRejectionOptIn !== undefined && typeof rawWhatsAppRejectionOptIn !== "boolean") return respond({ error: "La opción de WhatsApp no es válida." }, 400, origin);
   const dniUpdated = body.dni_updated;
   const loanAmount = numberField(body.loan_amount);
   const loanFrequency = textField(body, "loan_frequency", 20);
@@ -318,6 +321,10 @@ Deno.serve(async (req: Request) => {
   });
 
   const application = {
+    whatsapp_rejection_opt_in: whatsappRejectionOptIn,
+    whatsapp_rejection_opt_in_at: whatsappRejectionOptIn ? new Date().toISOString() : null,
+    whatsapp_rejection_consent_version: whatsappRejectionOptIn ? "20261029-v1" : null,
+    whatsapp_rejection_status: whatsappRejectionOptIn ? "pending" : "not_eligible",
     full_name: fullName,
     dni,
     dni_updated: dniUpdated,
