@@ -54,7 +54,7 @@ Deno.serve(async (request: Request) => {
     const id = typeof body.application_id === "string" ? body.application_id : "";
     const status = body.status;
     if (!id || (status !== "approved" && status !== "rejected")) return respond({ error: "La decisión indicada no es válida." }, 400, origin);
-    const { data, error } = await admin.from("loan_applications").update({ status }).eq("id", id).eq("status", "pending").select("id").maybeSingle();
+    const { data, error } = await admin.from("loan_applications").update({ status }).eq("id", id).in("status", ["pending", "under_review"]).select("id").maybeSingle();
     if (error) {
       console.error("No se pudo actualizar la solicitud:", error.message);
       return respond({ error: "No se pudo actualizar la solicitud." }, 500, origin);
@@ -65,7 +65,7 @@ Deno.serve(async (request: Request) => {
 
   if (body.action !== "list") return respond({ error: "La operación solicitada no es válida." }, 400, origin);
   const status = body.status;
-  if (status !== "pending" && status !== "approved" && status !== "rejected" && status !== "all") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
+  if (status !== "pending" && status !== "under_review" && status !== "approved" && status !== "rejected" && status !== "all") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
 
   let query = admin.from("loan_applications").select("*").order("created_at", { ascending: false }).limit(100);
   if (status !== "all") query = query.eq("status", status);
