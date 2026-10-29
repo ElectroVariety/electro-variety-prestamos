@@ -23,18 +23,18 @@ type LoanPlan = {
 
 const loanPlans: Record<number, Record<LoanFrequency, LoanPlan>> = {
   100000: {
-    weekly: { installments: 20, amount: 11250 },
-    fortnightly: { installments: 10, amount: 22500 },
+    weekly: { installments: 20, amount: 12000 },
+    fortnightly: { installments: 10, amount: 23000 },
     monthly: { installments: 5, amount: 45000 },
   },
   200000: {
-    weekly: { installments: 20, amount: 22500 },
+    weekly: { installments: 20, amount: 23000 },
     fortnightly: { installments: 10, amount: 45000 },
     monthly: { installments: 5, amount: 90000 },
   },
   300000: {
-    weekly: { installments: 20, amount: 33750 },
-    fortnightly: { installments: 10, amount: 67500 },
+    weekly: { installments: 20, amount: 34000 },
+    fortnightly: { installments: 10, amount: 68000 },
     monthly: { installments: 5, amount: 135000 },
   },
   400000: {
@@ -43,18 +43,18 @@ const loanPlans: Record<number, Record<LoanFrequency, LoanPlan>> = {
     monthly: { installments: 5, amount: 180000 },
   },
   500000: {
-    weekly: { installments: 20, amount: 56250 },
-    fortnightly: { installments: 10, amount: 112500 },
+    weekly: { installments: 20, amount: 57000 },
+    fortnightly: { installments: 10, amount: 113000 },
     monthly: { installments: 5, amount: 225000 },
   },
   600000: {
-    weekly: { installments: 20, amount: 67500 },
+    weekly: { installments: 20, amount: 68000 },
     fortnightly: { installments: 10, amount: 135000 },
     monthly: { installments: 5, amount: 270000 },
   },
   700000: {
-    weekly: { installments: 20, amount: 78750 },
-    fortnightly: { installments: 10, amount: 157500 },
+    weekly: { installments: 20, amount: 79000 },
+    fortnightly: { installments: 10, amount: 158000 },
     monthly: { installments: 5, amount: 315000 },
   },
   800000: {
@@ -63,12 +63,12 @@ const loanPlans: Record<number, Record<LoanFrequency, LoanPlan>> = {
     monthly: { installments: 5, amount: 360000 },
   },
   900000: {
-    weekly: { installments: 20, amount: 101250 },
-    fortnightly: { installments: 10, amount: 202500 },
+    weekly: { installments: 20, amount: 102000 },
+    fortnightly: { installments: 10, amount: 203000 },
     monthly: { installments: 5, amount: 405000 },
   },
   1000000: {
-    weekly: { installments: 20, amount: 112500 },
+    weekly: { installments: 20, amount: 113000 },
     fortnightly: { installments: 10, amount: 225000 },
     monthly: { installments: 5, amount: 450000 },
   },
@@ -402,7 +402,7 @@ function App() {
       console.error('Error al enviar solicitud:', error)
       setSubmitError(
         error instanceof Error
-          ? `${error.message} El servidor debe aceptar el envío multipart y guardar los archivos antes de habilitar solicitudes reales.`
+          ? `${error.message}`
           : 'Ocurrió un error inesperado al enviar la solicitud.',
       )
     } finally {
@@ -413,9 +413,9 @@ function App() {
   return (
     <main className="app-shell">
       <header className="brand-header">
-        <div className="brand-mark" aria-hidden="true">EV</div>
+        <div className="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" role="img"><path d="M8 9h32v30H8z" fill="none" stroke="currentColor" strokeWidth="2.5" rx="7"/><path d="M27 8 17 25h8l-4 15 11-19h-8l3-13Z" fill="currentColor"/></svg></div>
         <div className="brand-name">
-          <strong>ELECTRO VARIETY</strong>
+          <strong>PRÉSTAMOS VARIETY</strong>
           <span>PRÉSTAMOS PERSONALES</span>
         </div>
         <span className="secure-label">Solicitud online</span>
