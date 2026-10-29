@@ -109,3 +109,23 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+
+:root {
+  --brand-pearl: #F4F7FA;
+  --brand-electric: #008FFF;
+  --brand-graphite: #252B35;
+  --brand-silver: #B8C3D1;
+  --brand-blue-deep: #006FC6;
+  --brand-blue-soft: #E7F3FF;
+  --text: var(--brand-graphite);
+  --text-h: var(--brand-graphite);
+  --bg: var(--brand-pearl);
+  --border: var(--brand-silver);
+  --accent: var(--brand-electric);
+  color-scheme: light;
+  color: var(--brand-graphite);
+  background: var(--brand-pearl);
+}
+body { background: var(--brand-pearl); color: var(--brand-graphite); }
+#root { border-inline-color: var(--brand-silver); }
