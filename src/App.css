@@ -631,27 +631,39 @@ select:focus-visible {
 }
 
 
-/* Préstamos Variety visual refresh */
-:root { --green: #b87b2f; --green-dark: #704615; --green-soft: #fff4df; --border: #eadfcd; --muted: #796f62; background: #f8f4ed; color: #29251f; }
-body { background: radial-gradient(ellipse at 50% -20%, #fffaf1 0, #f8f4ed 58%); }
+
+
+/* Préstamos Variety identity: pearl, electric blue, graphite and silver */
+:root {
+  --green: var(--brand-blue-deep);
+  --green-dark: var(--brand-graphite);
+  --green-soft: var(--brand-blue-soft);
+  --border: var(--brand-silver);
+  --muted: #5f6c7a;
+  color: var(--brand-graphite);
+  background: var(--brand-pearl);
+}
+body { background: var(--brand-pearl); color: var(--brand-graphite); }
 .app-shell { max-width: 850px; }
-.brand-header { border-bottom: 1px solid #eadfcd; padding-bottom: 18px; }
-.brand-mark { background: linear-gradient(135deg, #d49b4c, #9e6521); color: white; box-shadow: 0 8px 20px #b87b2f33; }
-.brand-mark svg { width: 28px; height: 28px; }
-.brand-name strong { letter-spacing: .06em; }
-.hero { background: linear-gradient(135deg, #fffaf1, #f5e8d2); border: 1px solid #ebd9bd; }
-.hero h1 { color: #3f301c; }
-.section-number { color: #9e6521; background: #fff4df; }
-.amount-card { border-color: #d9b87e; background: linear-gradient(145deg, #fffaf1, #fff1d8); }
-.submit-button, button[type="submit"] { background: linear-gradient(135deg, #bd8134, #8d5b20); }
-.submit-button:hover, button[type="submit"]:hover { filter: brightness(.96); }
-@media (max-width: 560px) { .brand-name strong { letter-spacing: .035em; } }
-
-
-/* Improve contrast on the warm Préstamos Variety theme */
-.hero { color: #3f301c; }
-.eyebrow { color: #80551f; }
-.hero > p { color: #5c4c37; }
-.notice { border-color: #e4ceb0; background: #fff8ed; color: #574631; }
-.notice b { color: #3f301c; }
-.section-heading h2 { color: #29251f; }
+.brand-header { gap: 15px; border-bottom-color: #d5dde7; padding-bottom: 18px; }
+.brand-logo { display: block; flex: 0 0 auto; width: 82px; height: 82px; object-fit: contain; padding: 3px; border: 1px solid var(--brand-silver); border-radius: 50%; background: #fff; box-shadow: 0 5px 18px #252b3514; }
+.brand-name strong { color: var(--brand-graphite); letter-spacing: .06em; }
+.brand-name span { color: #5f6c7a; }
+.secure-label { border-color: var(--brand-silver); color: #005ea8; }
+.hero { color: var(--brand-pearl); background: linear-gradient(132deg, var(--brand-graphite) 0%, #303b4a 72%, #006fc6 150%); border: 1px solid #343f4d; box-shadow: 0 14px 32px #252b351d; }
+.hero h1 { color: #fff; }
+.eyebrow { color: #9bd4ff; }
+.hero > p { color: #e6edf5; }
+.notice { border-color: #b8c3d180; background: #f4f7fa12; color: #f4f7fa; }
+.notice b { color: #fff; }
+.form-section, .privacy-section { border-color: var(--brand-silver); }
+.section-number { color: #005da8; background: #e5f3ff; }
+.section-heading h2 { color: var(--brand-graphite); }
+.field-label { color: #303946; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand-electric); box-shadow: 0 0 0 3px #008fff20; }
+.choice:has(input:checked) { border-color: var(--brand-electric); background: #e7f3ff; color: #164f7e; }
+.amount-card { border-color: var(--brand-electric); background: linear-gradient(145deg, #fff, #eaf5ff); }
+.submit-button, button[type="submit"] { background: #006fc6; color: #fff; box-shadow: 0 8px 18px #006fc626; }
+.submit-button:hover, button[type="submit"]:hover { background: var(--brand-electric); filter: none; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--brand-electric); }
+@media (max-width: 560px) { .brand-logo { width: 64px; height: 64px; } .brand-header { gap: 10px; } .brand-name strong { letter-spacing: .035em; } }
