@@ -956,7 +956,7 @@ function App() {
 
       <footer className="site-footer">
         <div className="brand-mark small">EV</div>
-        <span>Electro Variety · Solicitudes de préstamos personales</span>
+        <span>Préstamos Variety · Solicitudes de préstamos personales</span>
       </footer>
     </main>
   )
