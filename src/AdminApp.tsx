@@ -183,7 +183,7 @@ export default function AdminApp() {
 
 
   const formatWhatsAppNumber = (phone: string) => {
-    const digits = phone.replace(/\\D/g, '')
+    const digits = phone.replace(/\D/g, '')
     if (digits.startsWith('549')) return `+${digits}`
     if (digits.startsWith('54')) return `+549${digits.slice(2)}`
     return `+549${digits}`
