@@ -243,6 +243,7 @@ function App() {
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File[]>>({})
   const [uploadResetKey, setUploadResetKey] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showRequiredErrors, setShowRequiredErrors] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [submitError, setSubmitError] = useState('')
 
@@ -274,6 +275,7 @@ function App() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setShowRequiredErrors(true)
     setSubmitMessage('')
     setSubmitError('')
 
@@ -397,6 +399,7 @@ function App() {
         throw new Error(data?.error || 'El servidor no confirmó el registro de la solicitud.')
       }
       setSubmitMessage('La solicitud se envió correctamente.')
+      setShowRequiredErrors(false)
       form.reset()
       setSelectedFiles({})
       setUploadResetKey((current) => current + 1)
@@ -446,7 +449,11 @@ function App() {
         </div>
       </div>
 
-      <form className="loan-form" onSubmit={handleSubmit}>
+      <form
+        className={`loan-form${showRequiredErrors ? ' show-required-errors' : ''}`}
+        onSubmit={handleSubmit}
+        onInvalidCapture={() => setShowRequiredErrors(true)}
+      >
         <Section number="01" title="Datos personales">
           <div className="form-grid">
             <Field label="Nombre y apellido">
@@ -541,7 +548,7 @@ function App() {
           description="Seleccioná los servicios que tengas disponibles."
         >
           <Field label="¿Qué servicio o comprobante tenés?">
-            <div className="choice-grid">
+            <div className="choice-grid required-choice-group">
               {[
                 { value: 'edesur', label: 'Edesur' },
                 { value: 'metrogas', label: 'Metrogas' },
@@ -683,7 +690,7 @@ function App() {
           title="Trabajo e ingresos"
           description="Podés seleccionar varias fuentes de ingresos."
         >
-          <div className="choice-grid">
+          <div className="choice-grid required-choice-group">
             {incomeOptions.map((option) => (
               <label className="choice" key={option.value}>
                 <input

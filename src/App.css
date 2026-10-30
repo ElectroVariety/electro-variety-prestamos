@@ -306,6 +306,29 @@ select:focus-visible {
   margin: 0;
 }
 
+.loan-form.show-required-errors .field input:invalid,
+.loan-form.show-required-errors .field select:invalid,
+.loan-form.show-required-errors .field textarea:invalid {
+  border-color: #c53d3d;
+  box-shadow: 0 0 0 3px #c53d3d20;
+}
+
+.loan-form.show-required-errors .choice:has(input:invalid),
+.loan-form.show-required-errors .required-choice-group:not(:has(input:checked)) .choice {
+  border-color: #c53d3d;
+  box-shadow: 0 0 0 1px #c53d3d;
+}
+
+.loan-form.show-required-errors .upload:has(input:invalid) {
+  border-color: #c53d3d;
+  box-shadow: 0 0 0 2px #c53d3d20;
+}
+
+.loan-form.show-required-errors .privacy-choice input:invalid {
+  outline: 2px solid #c53d3d;
+  outline-offset: 2px;
+}
+
 .upload-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
