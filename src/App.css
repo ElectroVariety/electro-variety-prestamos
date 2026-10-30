@@ -512,12 +512,15 @@ select:focus-visible {
   text-align: center;
 }
 
-.brand-mark.small {
-  flex-basis: 27px;
-  width: 27px;
-  height: 27px;
-  border-radius: 8px;
-  font-size: 10px;
+.footer-logo {
+  display: block;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border: 1px solid var(--brand-silver);
+  border-radius: 50%;
+  background: #fff;
 }
 
 @keyframes appear {

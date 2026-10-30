@@ -396,11 +396,7 @@ function App() {
       if (!data || data.success !== true) {
         throw new Error(data?.error || 'El servidor no confirmó el registro de la solicitud.')
       }
-      setSubmitMessage(
-        data.application_id
-          ? `Solicitud recibida correctamente. Número de referencia: ${data.application_id}.`
-          : 'Solicitud recibida correctamente.',
-      )
+      setSubmitMessage('La solicitud se envió correctamente.')
       form.reset()
       setSelectedFiles({})
       setUploadResetKey((current) => current + 1)
@@ -968,7 +964,7 @@ function App() {
       </form>
 
       <footer className="site-footer">
-        <div className="brand-mark small">EV</div>
+        <img className="footer-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" />
         <span>Préstamos Variety · Solicitudes de préstamos personales</span>
       </footer>
     </main>
