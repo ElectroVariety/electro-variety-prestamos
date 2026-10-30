@@ -512,17 +512,6 @@ select:focus-visible {
   text-align: center;
 }
 
-.footer-logo {
-  display: block;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  border: 1px solid var(--brand-silver);
-  border-radius: 50%;
-  background: #fff;
-}
-
 @keyframes appear {
   from {
     opacity: 0;
@@ -649,7 +638,10 @@ select:focus-visible {
 body { background: var(--brand-pearl); color: var(--brand-graphite); }
 .app-shell { max-width: 850px; }
 .brand-header { gap: 15px; border-bottom-color: #d5dde7; padding-bottom: 18px; }
-.brand-logo { display: block; flex: 0 0 auto; width: 82px; height: 82px; object-fit: contain; padding: 3px; border: 1px solid var(--brand-silver); border-radius: 50%; background: #fff; box-shadow: 0 5px 18px #252b3514; }
+.logo-frame { display:block; flex:none; overflow:hidden; border-radius:50%; background:#fff; }
+.logo-frame > img { display:block; width:112%; height:112%; max-width:none; object-fit:cover; transform:translate(-5.35%,-5.35%); }
+.brand-logo-frame { width:82px; height:82px; box-shadow:0 5px 18px #252b3514; }
+.footer-logo-frame { width:36px; height:36px; }
 .brand-name strong { color: var(--brand-graphite); letter-spacing: .06em; }
 .brand-name span { color: #5f6c7a; }
 .secure-label { border-color: var(--brand-silver); color: #005ea8; }
@@ -669,7 +661,7 @@ body { background: var(--brand-pearl); color: var(--brand-graphite); }
 .submit-button, button[type="submit"] { background: #006fc6; color: #fff; box-shadow: 0 8px 18px #006fc626; }
 .submit-button:hover, button[type="submit"]:hover { background: var(--brand-electric); filter: none; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--brand-electric); }
-@media (max-width: 560px) { .brand-logo { width: 64px; height: 64px; } .brand-header { gap: 10px; } .brand-name strong { letter-spacing: .035em; } }
+@media (max-width: 560px) { .brand-logo-frame { width:64px; height:64px; } .brand-header { gap: 10px; } .brand-name strong { letter-spacing: .035em; } }
 
 .whatsapp-consent { display:flex; align-items:flex-start; gap:10px; margin:14px 0; padding:13px 14px; border:1px solid var(--brand-silver); border-radius:10px; background:#fff; color:var(--brand-graphite); font-size:13px; line-height:1.5; }
 .whatsapp-consent input { flex:none; width:18px; height:18px; margin:2px 0 0; accent-color:var(--brand-blue-deep); }

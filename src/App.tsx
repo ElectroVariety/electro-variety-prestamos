@@ -423,7 +423,9 @@ function App() {
   return (
     <main className="app-shell">
       <header className="brand-header">
-        <img className="brand-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" />
+        <span className="logo-frame brand-logo-frame">
+          <img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" />
+        </span>
         <div className="brand-name">
           <strong>PRÉSTAMOS VARIETY</strong>
           <span>PRÉSTAMOS PERSONALES</span>
@@ -964,7 +966,9 @@ function App() {
       </form>
 
       <footer className="site-footer">
-        <img className="footer-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" />
+        <span className="logo-frame footer-logo-frame">
+          <img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" />
+        </span>
         <span>Préstamos Variety · Solicitudes de préstamos personales</span>
       </footer>
     </main>

@@ -266,7 +266,7 @@ export default function AdminApp() {
   if (!session) {
     return (
       <main className="admin-login">
-        <div className="admin-brand"><img className="admin-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" /><div><b>PRÉSTAMOS VARIETY</b><small>Administración de préstamos</small></div></div>
+        <div className="admin-brand"><span className="logo-frame admin-logo-frame"><img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" /></span><div><b>PRÉSTAMOS VARIETY</b><small>Administración de préstamos</small></div></div>
         <form onSubmit={signIn}>
           <h1>Ingresar</h1>
           <p>Acceso exclusivo para personal autorizado.</p>
@@ -282,7 +282,7 @@ export default function AdminApp() {
   return (
     <main className="admin-shell">
       <header className="admin-top">
-        <div className="admin-brand"><img className="admin-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" /><div><b>PRÉSTAMOS VARIETY</b><small>Panel de solicitudes</small></div></div>
+        <div className="admin-brand"><span className="logo-frame admin-logo-frame"><img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" /></span><div><b>PRÉSTAMOS VARIETY</b><small>Panel de solicitudes</small></div></div>
         <button className="admin-logout" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button>
       </header>
       <section className="admin-heading">

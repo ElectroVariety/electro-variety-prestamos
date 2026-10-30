@@ -6,7 +6,7 @@
 .admin-shell { font-family:'DM Sans',sans-serif; }
 .admin-top { border-bottom-color:var(--brand-silver); background:#ffffffb8; }
 .admin-brand { gap:12px; }
-.admin-logo { display:block; width:62px; height:62px; object-fit:contain; padding:2px; border:1px solid var(--brand-silver); border-radius:50%; background:#fff; }
+.admin-brand > .logo-frame { display:block; flex:0 0 62px; width:62px; height:62px; border-radius:50%; background:#fff; }
 .admin-brand b { color:var(--brand-graphite); font-size:14px; letter-spacing:.7px; }
 .admin-brand small, .application-row small, .detail-header p, .detail-grid small, .document-row small { color:#5e6978; }
 .admin-logout, .admin-list-header button { border-color:var(--brand-silver); color:var(--brand-graphite); }
@@ -27,7 +27,7 @@
 .admin-login label { color:var(--brand-graphite); }
 .admin-message { background:#e7f3ff; color:#164f7e; }
 .admin-shell button:focus-visible, .admin-login input:focus-visible, .admin-heading select:focus-visible { outline:3px solid var(--brand-electric); outline-offset:2px; }
-@media(max-width:560px) { .admin-logo { width:52px; height:52px; } .admin-top { gap:12px; } .admin-brand { gap:8px; } .admin-brand b { font-size:12px; } }
+@media(max-width:560px) { .admin-brand > .logo-frame { flex-basis:52px; width:52px; height:52px; } .admin-top { gap:12px; } .admin-brand { gap:8px; } .admin-brand b { font-size:12px; } }
 
 .admin-note-label { display:block; margin-bottom:10px; color:var(--brand-graphite); font-size:13px; font-weight:700; }
 .admin-note-input { box-sizing:border-box; width:100%; min-height:76px; padding:11px 12px; border:1px solid var(--brand-silver); border-radius:9px; color:var(--brand-graphite); font:inherit; resize:vertical; }
