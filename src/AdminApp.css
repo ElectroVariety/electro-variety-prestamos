@@ -50,3 +50,5 @@
 @media(max-width:560px) { .delete-actions { justify-content:stretch; } .delete-button { width:100%; } }
 
 .whatsapp-delivery-status { display:grid; gap:9px; }
+.income-detail { padding:4px 0 10px; border-top:1px solid #f0f2f0; }
+.income-fields { padding:10px 0 0; border:0; }

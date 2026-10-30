@@ -30,6 +30,9 @@ type Application = {
   housing_type: string
   has_service_in_own_name: boolean
   service_types: string[]
+  service_holder_name: string | null
+  service_holder_dni: string | null
+  service_holder_relationship: string | null
   has_debts: boolean
   debt_reason: string | null
   debt_amount: number | null
@@ -44,6 +47,8 @@ type Application = {
   decided_by: string | null
   admin_notes: string | null
   whatsapp_rejection_opt_in: boolean
+  whatsapp_rejection_opt_in_at: string | null
+  privacy_accepted: boolean
   whatsapp_rejection_status: string
   whatsapp_rejection_sent_at: string | null
   whatsapp_rejection_message_id: string | null
@@ -66,6 +71,32 @@ const incomeLabels: Record<string, string> = {
   cooperative: 'Cooperativa',
   other: 'Otros ingresos',
 }
+
+const serviceLabels: Record<string, string> = {
+  edesur: 'Edesur',
+  metrogas: 'Metrogas',
+  water: 'Agua',
+  other: 'Otro',
+  none: 'Ninguno a mi nombre',
+}
+
+const housingLabels: Record<string, string> = {
+  own: 'Vivienda propia',
+  rent_contract: 'Alquilo por contrato',
+  rent_verbal: 'Alquilo de palabra',
+}
+
+const incomeDetailFields: Array<[string, string, boolean?]> = [
+  ['activity_description', 'Actividad / origen'],
+  ['wallet_provider', 'Billetera virtual'],
+  ['benefit_name', 'Beneficio o institución'],
+  ['business_name', 'Nombre del comercio'],
+  ['business_activity', 'Actividad comercial'],
+  ['business_address', 'Dirección del comercio'],
+  ['business_duration', 'Antigüedad del comercio'],
+  ['business_revenue', 'Facturación mensual aproximada', true],
+  ['business_profit', 'Ganancia mensual aproximada', true],
+]
 
 const documentLabels: Record<string, string> = {
   dni_front: 'DNI frente',
@@ -334,29 +365,87 @@ export default function AdminApp() {
               <div className="detail-header">
                 <div><span className={'status-badge status-' + selected.status}>{statusLabel[selected.status] || selected.status}</span><h2>{selected.full_name}</h2><p>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</p></div>
               </div>
-              <div className="detail-grid">
-                <div><small>DNI</small><b>{selected.dni} {selected.dni_updated ? '· actualizado' : ''}</b></div>
-                <div><small>Teléfono</small><b>{selected.phone}</b></div>
-                <div><small>¿Vino recomendado?</small><b>{selected.has_referrer ? 'Sí' : 'No'}</b></div>
-                {selected.has_referrer && <>
-                  <div><small>Persona que recomendó</small><b>{selected.referrer_full_name || '—'}</b></div>
-                  <div><small>Teléfono del referente</small><b>{selected.referrer_phone || '—'}</b></div>
-                  <div><small>Vínculo con el referente</small><b>{selected.referrer_relationship || '—'}</b></div>
-                </>}
-                <div><small>Contacto alternativo</small><b>{selected.alternate_phone} · {selected.alternate_phone_relationship}</b></div>
-                <div><small>Domicilio</small><b>{selected.address}, {selected.locality}</b></div>
-                <div><small>Entre calles</small><b>{selected.between_streets || '—'}</b></div>
-                <div><small>Vivienda</small><b>{selected.housing_type}</b></div>
-                <div><small>Préstamo solicitado</small><b>{money(selected.loan_amount)}</b></div>
-                <div><small>Plan de pago</small><b>{selected.installment_count} cuotas {selected.loan_frequency === 'weekly' ? 'semanales' : selected.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'} de {money(selected.installment_amount)}</b></div>
-                <div><small>Total estimado</small><b>{money(selected.total_to_pay)}</b></div>
-                <div><small>Servicios a su nombre</small><b>{selected.has_service_in_own_name ? 'Sí' : 'No'}</b></div>
-                <div className="detail-wide"><small>Destino del préstamo</small><b>{selected.loan_purpose}</b></div>
-                {selected.has_debts && <div className="detail-wide"><small>Deudas declaradas</small><b>{selected.debt_reason} · {money(selected.debt_amount)}</b></div>}
+              <div className="detail-subsection">
+                <h3>Datos personales</h3>
+                <div className="detail-grid">
+                  <div><small>Nombre y apellido</small><b>{selected.full_name}</b></div>
+                  <div><small>DNI</small><b>{selected.dni}</b></div>
+                  <div><small>¿Tiene el DNI actualizado?</small><b>{selected.dni_updated ? 'Sí' : 'No'}</b></div>
+                  <div><small>Teléfono personal</small><b>{selected.phone}</b></div>
+                  <div><small>Teléfono alternativo</small><b>{selected.alternate_phone}</b></div>
+                  <div><small>Vínculo con el contacto alternativo</small><b>{selected.alternate_phone_relationship}</b></div>
+                  <div><small>¿Vino recomendado?</small><b>{selected.has_referrer ? 'Sí' : 'No'}</b></div>
+                  {selected.has_referrer && <>
+                    <div><small>Nombre de quien recomendó</small><b>{selected.referrer_full_name || '—'}</b></div>
+                    <div><small>Teléfono de quien recomendó</small><b>{selected.referrer_phone || '—'}</b></div>
+                    <div><small>Vínculo con quien recomendó</small><b>{selected.referrer_relationship || '—'}</b></div>
+                  </>}
+                </div>
               </div>
               <div className="detail-subsection">
-                <h3>Ingresos declarados</h3>
-                {selected.incomes.length ? selected.incomes.map((income, index) => <div className="income-row" key={String(income.source_type) + index}><b>{incomeLabels[String(income.source_type)] || String(income.source_type)}</b><span>{money(income.monthly_income)} por mes</span></div>) : <p>Sin datos de ingresos.</p>}
+                <h3>Domicilio</h3>
+                <div className="detail-grid">
+                  <div><small>Calle y número</small><b>{selected.address}</b></div>
+                  <div><small>Entre calles</small><b>{selected.between_streets || '—'}</b></div>
+                  <div><small>Localidad</small><b>{selected.locality}</b></div>
+                  <div><small>Situación de vivienda</small><b>{housingLabels[selected.housing_type] || selected.housing_type || '—'}</b></div>
+                </div>
+              </div>
+              <div className="detail-subsection">
+                <h3>Comprobante de domicilio</h3>
+                <div className="detail-grid">
+                  <div><small>Servicios o comprobantes declarados</small><b>{selected.service_types?.length ? selected.service_types.map((service) => serviceLabels[service] || service).join(', ') : 'Ninguno informado'}</b></div>
+                  {selected.service_types?.some((service) => service !== 'none') && <>
+                    <div><small>¿El servicio está a nombre de la persona?</small><b>{selected.has_service_in_own_name ? 'Sí' : 'No'}</b></div>
+                    {!selected.has_service_in_own_name && <>
+                      <div><small>Nombre del titular del servicio</small><b>{selected.service_holder_name || '—'}</b></div>
+                      <div><small>DNI del titular del servicio</small><b>{selected.service_holder_dni || '—'}</b></div>
+                      <div><small>Vínculo con el titular</small><b>{selected.service_holder_relationship || '—'}</b></div>
+                    </>}
+                  </>}
+                </div>
+              </div>
+              <div className="detail-subsection">
+                <h3>Situación financiera</h3>
+                <div className="detail-grid">
+                  <div><small>¿Tiene deudas actualmente?</small><b>{selected.has_debts ? 'Sí' : 'No'}</b></div>
+                  {selected.has_debts && <>
+                    <div><small>Motivo de la deuda</small><b>{selected.debt_reason || '—'}</b></div>
+                    <div><small>Monto aproximado de la deuda</small><b>{money(selected.debt_amount)}</b></div>
+                  </>}
+                </div>
+              </div>
+              <div className="detail-subsection">
+                <h3>Trabajo e ingresos</h3>
+                {selected.incomes.length ? selected.incomes.map((income, index) => (
+                  <div className="income-detail" key={String(income.source_type) + index}>
+                    <div className="income-row"><b>{incomeLabels[String(income.source_type)] || String(income.source_type)}</b><span>{money(income.monthly_income)} por mes</span></div>
+                    <div className="detail-grid income-fields">
+                      {incomeDetailFields.map(([key, label, isMoney]) => {
+                        const value = income[key]
+                        if (value === null || value === undefined || value === '') return null
+                        return <div key={key}><small>{label}</small><b>{isMoney ? money(value) : String(value)}</b></div>
+                      })}
+                    </div>
+                  </div>
+                )) : <p>Sin datos de ingresos.</p>}
+              </div>
+              <div className="detail-subsection">
+                <h3>Préstamo solicitado</h3>
+                <div className="detail-grid">
+                  <div><small>Monto solicitado</small><b>{money(selected.loan_amount)}</b></div>
+                  <div><small>Modalidad de cuotas</small><b>{selected.installment_count} cuotas {selected.loan_frequency === 'weekly' ? 'semanales' : selected.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'} de {money(selected.installment_amount)}</b></div>
+                  <div><small>Total estimado a pagar</small><b>{money(selected.total_to_pay)}</b></div>
+                  <div className="detail-wide"><small>¿Para qué necesita el préstamo?</small><b>{selected.loan_purpose}</b></div>
+                </div>
+              </div>
+              <div className="detail-subsection">
+                <h3>Consentimientos</h3>
+                <div className="detail-grid">
+                  <div><small>Aceptó el tratamiento de datos</small><b>{selected.privacy_accepted ? 'Sí' : 'No registrado'}</b></div>
+                  <div><small>Aceptó recibir el resultado por WhatsApp</small><b>{selected.whatsapp_rejection_opt_in ? 'Sí' : 'No'}</b></div>
+                  {selected.whatsapp_rejection_opt_in_at && <div><small>Fecha del consentimiento de WhatsApp</small><b>{new Date(selected.whatsapp_rejection_opt_in_at).toLocaleString('es-AR')}</b></div>}
+                </div>
               </div>
               <div className="detail-subsection">
                 <h3>Documentación <span>{selected.documents.length}</span></h3>
