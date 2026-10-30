@@ -231,6 +231,7 @@ function Section({
 
 function App() {
   const [housing, setHousing] = useState('')
+  const [referrerStatus, setReferrerStatus] = useState('')
   const [serviceOwner, setServiceOwner] = useState('')
   const [serviceTypes, setServiceTypes] = useState<string[]>([])
   const [hasDebts, setHasDebts] = useState('')
@@ -348,6 +349,10 @@ function App() {
       dni: value('dni'),
       dni_updated: value('dni_updated') === 'yes',
       phone: value('phone'),
+      has_referrer: referrerStatus === 'yes',
+      referrer_full_name: referrerStatus === 'yes' ? value('referrer_full_name') : '',
+      referrer_phone: referrerStatus === 'yes' ? value('referrer_phone') : '',
+      referrer_relationship: referrerStatus === 'yes' ? value('referrer_relationship') : '',
       alternate_phone: value('alternate_phone'),
       alternate_phone_relationship: value('alternate_phone_relationship'),
       address: value('address'),
@@ -404,6 +409,7 @@ function App() {
       setSelectedFiles({})
       setUploadResetKey((current) => current + 1)
       setHousing('')
+      setReferrerStatus('')
       setServiceOwner('')
       setServiceTypes([])
       setHasDebts('')
@@ -491,6 +497,52 @@ function App() {
               <input name="alternate_phone_relationship" required />
             </Field>
           </div>
+
+          <Field label="¿Venís recomendado por alguien?">
+            <div className="choice-list horizontal">
+              <label className="choice">
+                <input
+                  type="radio"
+                  name="has_referrer"
+                  value="yes"
+                  checked={referrerStatus === 'yes'}
+                  onChange={() => setReferrerStatus('yes')}
+                  required
+                />
+                <span>Sí</span>
+              </label>
+              <label className="choice">
+                <input
+                  type="radio"
+                  name="has_referrer"
+                  value="no"
+                  checked={referrerStatus === 'no'}
+                  onChange={() => setReferrerStatus('no')}
+                  required
+                />
+                <span>No</span>
+              </label>
+            </div>
+          </Field>
+
+          {referrerStatus === 'yes' && (
+            <div className="conditional-panel form-grid">
+              <Field label="Nombre y apellido de quien te recomendó">
+                <input name="referrer_full_name" autoComplete="name" required />
+              </Field>
+              <Field label="Teléfono de quien te recomendó">
+                <input name="referrer_phone" type="tel" autoComplete="tel" required />
+              </Field>
+              <Field label="¿Cuál es tu vínculo con esta persona?">
+                <input
+                  name="referrer_relationship"
+                  placeholder="Ej.: familiar, amistad, compañero de trabajo"
+                  maxLength={100}
+                  required
+                />
+              </Field>
+            </div>
+          )}
 
           <div className="upload-grid">
             <Upload label="Frente del DNI" fileKey="dni_front" onFilesChange={handleFilesChange} resetKey={uploadResetKey} />

@@ -18,6 +18,10 @@ type Application = {
   dni: string
   dni_updated: boolean
   phone: string
+  has_referrer: boolean
+  referrer_full_name: string | null
+  referrer_phone: string | null
+  referrer_relationship: string | null
   alternate_phone: string
   alternate_phone_relationship: string
   address: string
@@ -333,6 +337,12 @@ export default function AdminApp() {
               <div className="detail-grid">
                 <div><small>DNI</small><b>{selected.dni} {selected.dni_updated ? '· actualizado' : ''}</b></div>
                 <div><small>Teléfono</small><b>{selected.phone}</b></div>
+                <div><small>¿Vino recomendado?</small><b>{selected.has_referrer ? 'Sí' : 'No'}</b></div>
+                {selected.has_referrer && <>
+                  <div><small>Persona que recomendó</small><b>{selected.referrer_full_name || '—'}</b></div>
+                  <div><small>Teléfono del referente</small><b>{selected.referrer_phone || '—'}</b></div>
+                  <div><small>Vínculo con el referente</small><b>{selected.referrer_relationship || '—'}</b></div>
+                </>}
                 <div><small>Contacto alternativo</small><b>{selected.alternate_phone} · {selected.alternate_phone_relationship}</b></div>
                 <div><small>Domicilio</small><b>{selected.address}, {selected.locality}</b></div>
                 <div><small>Entre calles</small><b>{selected.between_streets || '—'}</b></div>

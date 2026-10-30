@@ -129,6 +129,14 @@ Deno.serve(async (req: Request) => {
   const fullName = textField(body, "full_name", 150, true);
   const dniRaw = textField(body, "dni", 20, true);
   const phone = textField(body, "phone", 40, true);
+  const rawHasReferrer = body.has_referrer;
+  const hasReferrer = rawHasReferrer === true;
+  if (rawHasReferrer !== undefined && typeof rawHasReferrer !== "boolean") {
+    return respond({ error: "La respuesta sobre la recomendación no es válida." }, 400, origin);
+  }
+  const referrerFullName = textField(body, "referrer_full_name", 150, hasReferrer);
+  const referrerPhone = textField(body, "referrer_phone", 40, hasReferrer);
+  const referrerRelationship = textField(body, "referrer_relationship", 100, hasReferrer);
   const address = textField(body, "address", 200, true);
   const locality = textField(body, "locality", 120, true);
   const loanPurpose = textField(body, "loan_purpose", 1000, true);
@@ -160,8 +168,13 @@ Deno.serve(async (req: Request) => {
   if (!fullName || !dniRaw || !phone || !address || !locality || !loanPurpose ||
       alternatePhone === null || !alternateRelationship || !betweenStreets ||
       !housingType || serviceHolderName === null || serviceHolderDni === null ||
-      serviceHolderRelationship === null || debtReason === null) {
+      serviceHolderRelationship === null || debtReason === null ||
+      referrerFullName === null || referrerPhone === null ||
+      referrerRelationship === null) {
     return respond({ error: "Hay campos obligatorios vacíos o con formato incorrecto." }, 400, origin);
+  }
+  if (hasReferrer && (!referrerFullName || !referrerPhone || !referrerRelationship)) {
+    return respond({ error: "Completá el nombre, el teléfono y el vínculo con quien te recomendó." }, 400, origin);
   }
 
   const dni = dniRaw.replace(/\D/g, "");
@@ -329,6 +342,10 @@ Deno.serve(async (req: Request) => {
     dni,
     dni_updated: dniUpdated,
     phone,
+    has_referrer: hasReferrer,
+    referrer_full_name: hasReferrer ? referrerFullName : null,
+    referrer_phone: hasReferrer ? referrerPhone : null,
+    referrer_relationship: hasReferrer ? referrerRelationship : null,
     alternate_phone: alternatePhone,
     alternate_phone_relationship: alternateRelationship,
     address,
