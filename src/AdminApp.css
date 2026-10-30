@@ -52,3 +52,41 @@
 .whatsapp-delivery-status { display:grid; gap:9px; }
 .income-detail { padding:4px 0 10px; border-top:1px solid #f0f2f0; }
 .income-fields { padding:10px 0 0; border:0; }
+.pdf-download-button { flex:none; border:0; border-radius:9px; padding:10px 14px; background:#006fc6; color:#fff; font-weight:700; cursor:pointer; }
+.pdf-download-button:hover { background:var(--brand-electric); }
+.application-print { display:none; }
+
+@media print {
+  @page { size:A4; margin:12mm; }
+  html, body, #root { width:auto!important; max-width:none!important; min-height:0!important; margin:0!important; border:0!important; background:#fff!important; }
+  #root { display:block!important; }
+  body * { visibility:hidden!important; }
+  .admin-shell { display:block!important; min-height:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
+  .admin-shell > :not(.application-print) { display:none!important; }
+  .application-print, .application-print * { visibility:visible!important; }
+  .application-print { display:grid!important; width:100%; max-width:185mm; margin:0 auto; gap:12px; color:#252b35; font-family:'DM Sans',Arial,sans-serif; font-size:10pt; line-height:1.4; }
+  .pdf-brand-header { display:flex; align-items:center; gap:11px; padding:0 0 10px; border-bottom:1px solid #b8c3d1; }
+  .pdf-brand-header>div { display:grid; gap:2px; }
+  .pdf-brand-header b { font-size:12pt; letter-spacing:.07em; }
+  .pdf-brand-header small { color:#5e6978; font-size:8pt; letter-spacing:.1em; }
+  .pdf-logo-frame { width:48px; height:48px; }
+  .pdf-hero { padding:17px 19px; border:1px solid #252b35; border-radius:14px; background:linear-gradient(132deg,#252b35 0%,#303b4a 72%,#006fc6 150%)!important; color:#f4f7fa!important; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .pdf-kicker { color:#9bd4ff; font-size:8pt; font-weight:700; letter-spacing:.12em; }
+  .pdf-hero h1 { margin:7px 0 3px; color:#fff!important; font-size:21pt; }
+  .pdf-hero p { margin:0 0 3px; color:#fff!important; font-size:13pt; font-weight:700; }
+  .pdf-hero small { color:#e6edf5; font-size:8pt; }
+  .pdf-section, .pdf-consents, .pdf-documents { padding:13px 15px; border:1px solid #b8c3d1; border-radius:13px; background:#fff!important; break-inside:avoid; }
+  .pdf-section-heading { display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+  .pdf-section-heading>span { display:grid; place-items:center; flex:none; width:27px; height:27px; border-radius:8px; background:#e7f3ff!important; color:#005da8; font-size:8pt; font-weight:800; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .pdf-section-heading h2 { margin:0; color:#252b35!important; font-size:12pt; }
+  .pdf-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 14px; }
+  .pdf-field { display:grid; align-content:start; gap:2px; min-width:0; padding:4px 0; border-bottom:1px solid #edf0f3; overflow-wrap:anywhere; break-inside:avoid; }
+  .pdf-field small { color:#5e6978; font-size:8pt; }
+  .pdf-field b { color:#252b35; font-size:9.5pt; font-weight:600; white-space:pre-wrap; }
+  .pdf-income { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 14px; padding:8px 0; border-top:1px solid #edf0f3; break-inside:avoid; }
+  .pdf-income h3 { grid-column:1/-1; margin:0 0 4px; color:#005da8; font-size:10pt; }
+  .pdf-consents b { font-size:10pt; }
+  .pdf-consents p, .pdf-documents p { margin:5px 0; font-size:9pt; }
+  .pdf-consents small, .pdf-documents small { color:#5e6978; font-size:8pt; overflow-wrap:anywhere; }
+  .pdf-footer { padding-top:7px; border-top:1px solid #b8c3d1; color:#5e6978; text-align:center; font-size:8pt; }
+}

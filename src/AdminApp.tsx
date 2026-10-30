@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import './AdminApp.css'
@@ -117,6 +117,20 @@ const statusLabel: Record<string, string> = {
   under_review: 'En revisión',
   approved: 'Aprobada',
   rejected: 'Rechazada',
+}
+
+function PdfField({ label, value }: { label: string; value: unknown }) {
+  const text = value === null || value === undefined || value === '' ? '—' : String(value)
+  return <div className="pdf-field"><small>{label}</small><b>{text}</b></div>
+}
+
+function PdfSection({ number, title, children }: { number: string; title: string; children: ReactNode }) {
+  return (
+    <section className="pdf-section">
+      <div className="pdf-section-heading"><span>{number}</span><h2>{title}</h2></div>
+      <div className="pdf-grid">{children}</div>
+    </section>
+  )
 }
 
 export default function AdminApp() {
@@ -294,6 +308,19 @@ export default function AdminApp() {
   }
 
   const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
+
+  const downloadApplicationPdf = () => {
+    if (!selected) return
+    const previousTitle = document.title
+    const safeName = selected.full_name.trim().replace(/[^\p{L}\p{N}-]+/gu, '-')
+    document.title = `Solicitud-${safeName}-${selected.id.slice(0, 8)}`
+    window.onafterprint = () => {
+      document.title = previousTitle
+      window.onafterprint = null
+    }
+    window.print()
+  }
+
   const whatsAppMessage = whatsAppApplicant
     ? `Hola ${whatsAppApplicant.full_name}. Revisamos tu solicitud y cumplís con las condiciones para acceder a un préstamo. Para continuar con el proceso, respondé este mensaje y un asesor te brindará el asesoramiento sobre los próximos pasos. — Préstamos Variety.`
     : ''
@@ -316,6 +343,99 @@ export default function AdminApp() {
 
   return (
     <main className="admin-shell">
+      {selected && (
+        <article className="application-print" aria-hidden="true">
+          <header className="pdf-brand-header">
+            <span className="logo-frame pdf-logo-frame"><img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="" /></span>
+            <div><b>PRÉSTAMOS VARIETY</b><small>PRÉSTAMOS PERSONALES</small></div>
+          </header>
+          <section className="pdf-hero">
+            <span className="pdf-kicker">SOLICITUD PERSONAL · {statusLabel[selected.status] || selected.status}</span>
+            <h1>Solicitud de préstamo</h1>
+            <p>{selected.full_name}</p>
+            <small>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</small>
+          </section>
+
+          <PdfSection number="01" title="Datos personales">
+            <PdfField label="Nombre y apellido" value={selected.full_name} />
+            <PdfField label="DNI" value={selected.dni} />
+            <PdfField label="¿Tiene el DNI actualizado?" value={selected.dni_updated ? 'Sí' : 'No'} />
+            <PdfField label="Teléfono personal" value={selected.phone} />
+            <PdfField label="Teléfono alternativo" value={selected.alternate_phone} />
+            <PdfField label="Vínculo con el contacto alternativo" value={selected.alternate_phone_relationship} />
+            <PdfField label="¿Vino recomendado por alguien?" value={selected.has_referrer ? 'Sí' : 'No'} />
+            {selected.has_referrer && <>
+              <PdfField label="Nombre de quien recomendó" value={selected.referrer_full_name} />
+              <PdfField label="Teléfono de quien recomendó" value={selected.referrer_phone} />
+              <PdfField label="Vínculo con quien recomendó" value={selected.referrer_relationship} />
+            </>}
+          </PdfSection>
+
+          <PdfSection number="02" title="Domicilio">
+            <PdfField label="Calle y número" value={selected.address} />
+            <PdfField label="Entre calles" value={selected.between_streets} />
+            <PdfField label="Localidad" value={selected.locality} />
+            <PdfField label="Situación de vivienda" value={housingLabels[selected.housing_type] || selected.housing_type} />
+          </PdfSection>
+
+          <PdfSection number="03" title="Comprobante de domicilio">
+            <PdfField label="Servicios o comprobantes declarados" value={selected.service_types?.length ? selected.service_types.map((service) => serviceLabels[service] || service).join(', ') : 'Ninguno informado'} />
+            {selected.service_types?.some((service) => service !== 'none') && <>
+              <PdfField label="¿El servicio está a nombre de la persona?" value={selected.has_service_in_own_name ? 'Sí' : 'No'} />
+              {!selected.has_service_in_own_name && <>
+                <PdfField label="Nombre del titular del servicio" value={selected.service_holder_name} />
+                <PdfField label="DNI del titular del servicio" value={selected.service_holder_dni} />
+                <PdfField label="Vínculo con el titular" value={selected.service_holder_relationship} />
+              </>}
+            </>}
+          </PdfSection>
+
+          <PdfSection number="04" title="Situación financiera">
+            <PdfField label="¿Tiene deudas actualmente?" value={selected.has_debts ? 'Sí' : 'No'} />
+            {selected.has_debts && <>
+              <PdfField label="Motivo de la deuda" value={selected.debt_reason} />
+              <PdfField label="Monto aproximado de la deuda" value={money(selected.debt_amount)} />
+            </>}
+          </PdfSection>
+
+          <PdfSection number="05" title="Trabajo e ingresos">
+            {selected.incomes.length ? selected.incomes.map((income, index) => (
+              <div className="pdf-income" key={String(income.source_type) + index}>
+                <h3>{incomeLabels[String(income.source_type)] || String(income.source_type)}</h3>
+                <PdfField label="Ingreso mensual aproximado" value={money(income.monthly_income)} />
+                {incomeDetailFields.map(([key, label, isMoney]) => {
+                  const value = income[key]
+                  if (value === null || value === undefined || value === '') return null
+                  return <PdfField key={key} label={label} value={isMoney ? money(value) : value} />
+                })}
+              </div>
+            )) : <PdfField label="Fuentes de ingreso" value="Sin datos de ingresos" />}
+          </PdfSection>
+
+          <PdfSection number="06" title="Tu préstamo">
+            <PdfField label="Monto solicitado" value={money(selected.loan_amount)} />
+            <PdfField label="Modalidad de cuotas" value={`${selected.installment_count} cuotas ${selected.loan_frequency === 'weekly' ? 'semanales' : selected.loan_frequency === 'fortnightly' ? 'quincenales' : 'mensuales'}`} />
+            <PdfField label="Valor de cada cuota" value={money(selected.installment_amount)} />
+            <PdfField label="Total estimado a pagar" value={money(selected.total_to_pay)} />
+            <PdfField label="¿Para qué necesita el préstamo?" value={selected.loan_purpose} />
+          </PdfSection>
+
+          <section className="pdf-consents">
+            <b>Consentimientos</b>
+            <p>Tratamiento de datos: {selected.privacy_accepted ? 'Aceptado' : 'No registrado'}</p>
+            <p>Notificación del resultado por WhatsApp: {selected.whatsapp_rejection_opt_in ? 'Aceptada' : 'No aceptada'}</p>
+            {selected.whatsapp_rejection_opt_in_at && <small>Consentimiento de WhatsApp registrado el {new Date(selected.whatsapp_rejection_opt_in_at).toLocaleString('es-AR')}</small>}
+          </section>
+
+          <section className="pdf-documents">
+            <div className="pdf-section-heading"><span>＋</span><h2>Documentación adjunta</h2></div>
+            {selected.documents.length ? selected.documents.map((document) => (
+              <p key={document.id}><b>{documentLabels[document.document_type] || document.document_type}</b><br /><small>{document.original_filename} · {Math.max(1, Math.round(document.file_size_bytes / 1024))} KB</small></p>
+            )) : <p>No hay documentos cargados.</p>}
+          </section>
+          <footer className="pdf-footer">Préstamos Variety · Solicitud personal · Información confidencial</footer>
+        </article>
+      )}
       <header className="admin-top">
         <div className="admin-brand"><span className="logo-frame admin-logo-frame"><img src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="Préstamos Variety" /></span><div><b>PRÉSTAMOS VARIETY</b><small>Panel de solicitudes</small></div></div>
         <button className="admin-logout" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button>
@@ -364,6 +484,7 @@ export default function AdminApp() {
             <>
               <div className="detail-header">
                 <div><span className={'status-badge status-' + selected.status}>{statusLabel[selected.status] || selected.status}</span><h2>{selected.full_name}</h2><p>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</p></div>
+                <button className="pdf-download-button" onClick={downloadApplicationPdf}>Descargar PDF</button>
               </div>
               <div className="detail-subsection">
                 <h3>Datos personales</h3>
