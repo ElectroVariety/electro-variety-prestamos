@@ -545,8 +545,8 @@ function App() {
           )}
 
           <div className="upload-grid">
-            <Upload label="Frente del DNI" fileKey="dni_front" onFilesChange={handleFilesChange} resetKey={uploadResetKey} />
-            <Upload label="Dorso del DNI" fileKey="dni_back" onFilesChange={handleFilesChange} resetKey={uploadResetKey} />
+              <Upload label="Frente de tu DNI" fileKey="dni_front" onFilesChange={handleFilesChange} resetKey={uploadResetKey} />
+              <Upload label="Dorso de tu DNI" fileKey="dni_back" onFilesChange={handleFilesChange} resetKey={uploadResetKey} />
           </div>
         </Section>
 
