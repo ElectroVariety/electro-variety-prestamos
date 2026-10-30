@@ -946,10 +946,6 @@ function App() {
             </span>
           </label>
 
-          <p className="privacy-note">
-            Tus documentos deberán almacenarse de forma privada y utilizarse
-            únicamente para las finalidades informadas.
-          </p>
         </section>
 
         {submitError && <p className="form-error" role="alert">{submitError}</p>}
