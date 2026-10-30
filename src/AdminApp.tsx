@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import type { DownloadedAttachment, ExportApplication } from './lib/application-export'
 import './AdminApp.css'
 
 type Document = {
@@ -11,49 +12,15 @@ type Document = {
   signed_url: string
 }
 
-type Application = {
-  id: string
-  created_at: string
-  full_name: string
-  dni: string
-  dni_updated: boolean
-  phone: string
-  has_referrer: boolean
-  referrer_full_name: string | null
-  referrer_phone: string | null
-  referrer_relationship: string | null
-  alternate_phone: string
-  alternate_phone_relationship: string
-  address: string
-  between_streets: string
-  locality: string
-  housing_type: string
-  has_service_in_own_name: boolean
-  service_types: string[]
-  service_holder_name: string | null
-  service_holder_dni: string | null
-  service_holder_relationship: string | null
-  has_debts: boolean
-  debt_reason: string | null
-  debt_amount: number | null
-  loan_amount: number
-  loan_frequency: string
-  installment_count: number
-  installment_amount: number
-  total_to_pay: number
-  loan_purpose: string
+type Application = ExportApplication & {
   status: string
   decided_at: string | null
   decided_by: string | null
   admin_notes: string | null
-  whatsapp_rejection_opt_in: boolean
-  whatsapp_rejection_opt_in_at: string | null
-  privacy_accepted: boolean
   whatsapp_rejection_status: string
   whatsapp_rejection_sent_at: string | null
   whatsapp_rejection_message_id: string | null
   whatsapp_rejection_error_code: string | null
-  incomes: Record<string, unknown>[]
   documents: Document[]
 }
 
@@ -148,6 +115,9 @@ export default function AdminApp() {
   const [nextOffset, setNextOffset] = useState(0)
   const [whatsAppApplicant, setWhatsAppApplicant] = useState<Application | null>(null)
   const [whatsAppNumber, setWhatsAppNumber] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [exporting, setExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState('')
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -221,6 +191,11 @@ export default function AdminApp() {
     try {
       const result = await callAdmin({ action: 'decide', application_id: selected.id, status, admin_notes: decisionNote })
       setDecisionNote('')
+      setSelectedIds((current) => {
+        const next = new Set(current)
+        next.delete(selected.id)
+        return next
+      })
       if (status === 'rejected') {
         const delivery = result.notification?.status
         const deliveryNotice: Record<string, string> = {
@@ -293,6 +268,11 @@ export default function AdminApp() {
     setNotice('')
     try {
       await callAdmin({ action: 'delete', application_id: selected.id })
+      setSelectedIds((current) => {
+        const next = new Set(current)
+        next.delete(selected.id)
+        return next
+      })
       if (whatsAppApplicant?.id === selected.id) {
         setWhatsAppApplicant(null)
         setWhatsAppNumber('')
@@ -309,16 +289,153 @@ export default function AdminApp() {
 
   const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
 
-  const downloadApplicationPdf = () => {
-    if (!selected) return
-    const previousTitle = document.title
-    const safeName = selected.full_name.trim().replace(/[^\p{L}\p{N}-]+/gu, '-')
-    document.title = `Solicitud-${safeName}-${selected.id.slice(0, 8)}`
-    window.onafterprint = () => {
-      document.title = previousTitle
-      window.onafterprint = null
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = filename
+    document.body.append(anchor)
+    anchor.click()
+    anchor.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
+  const getFreshApplication = async (applicationId: string) => {
+    let offset = 0
+    let hasNextPage = true
+    while (hasNextPage) {
+      const page = await callAdmin({ action: 'list', status: filter, offset: String(offset) })
+      const rows = (page.applications ?? []) as Application[]
+      const match = rows.find((row) => row.id === applicationId)
+      if (match) return match
+      hasNextPage = Boolean(page.has_more)
+      offset = Number(page.next_offset ?? offset + rows.length)
     }
-    window.print()
+    throw new Error('La solicitud ya no aparece en este filtro. Actualizá la lista e intentá de nuevo.')
+  }
+
+  const getAttachments = async (application: Application, downloadFile: (document: Document) => Promise<Uint8Array>) => {
+    const files: DownloadedAttachment[] = []
+    for (const document of application.documents) {
+      files.push({ document, bytes: await downloadFile(document) })
+    }
+    return files
+  }
+
+  const downloadApplicationPdf = async () => {
+    if (!selected || exporting) return
+    setExporting(true)
+    setExportProgress('Preparando la solicitud y sus archivos adjuntos…')
+    setError('')
+    setNotice('')
+    try {
+      const { buildApplicationPdf, downloadApplicationFile, safeFilename } = await import('./lib/application-export')
+      const application = await getFreshApplication(selected.id)
+      const attachments = await getAttachments(application, downloadApplicationFile)
+      const pdf = await buildApplicationPdf(application, attachments, `${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`)
+      const filename = `Solicitud-${safeFilename(application.full_name)}-${application.id.slice(0, 8)}.pdf`
+      downloadBlob(new Blob([pdf.buffer as ArrayBuffer], { type: 'application/pdf' }), filename)
+      setNotice('El PDF de la solicitud, con sus adjuntos, se descargó correctamente.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo generar el PDF.')
+    } finally {
+      setExporting(false)
+      setExportProgress('')
+    }
+  }
+
+  const toggleApplication = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectVisibleApplications = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      const allVisibleSelected = applications.length > 0 && applications.every((application) => next.has(application.id))
+      applications.forEach((application) => allVisibleSelected ? next.delete(application.id) : next.add(application.id))
+      return next
+    })
+  }
+
+  const selectAllFilteredApplications = async () => {
+    if (loading || exporting) return
+    setLoading(true)
+    setError('')
+    setNotice('Buscando todas las solicitudes del filtro…')
+    try {
+      const ids: string[] = []
+      let offset = 0
+      let hasNextPage = true
+      while (hasNextPage) {
+        const page = await callAdmin({ action: 'list', status: filter, offset: String(offset) })
+        const rows = (page.applications ?? []) as Application[]
+        ids.push(...rows.map((application) => application.id))
+        hasNextPage = Boolean(page.has_more)
+        offset = Number(page.next_offset ?? offset + rows.length)
+      }
+      setSelectedIds(new Set(ids))
+      setNotice(`Se seleccionaron ${ids.length} solicitudes. Podés descargarlas juntas en un ZIP.`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron seleccionar todas las solicitudes.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const downloadSelectedZip = async () => {
+    if (!selectedIds.size || exporting) return
+    setExporting(true)
+    setExportProgress('Preparando solicitudes…')
+    setError('')
+    setNotice('')
+    try {
+      const [{ default: JSZip }, { buildApplicationPdf, downloadApplicationFile, safeFilename }] = await Promise.all([
+        import('jszip'),
+        import('./lib/application-export'),
+      ])
+      const zip = new JSZip()
+      const idsToExport = new Set(selectedIds)
+      let processed = 0
+      let offset = 0
+      let hasNextPage = true
+      while (hasNextPage && processed < idsToExport.size) {
+        const page = await callAdmin({ action: 'list', status: filter, offset: String(offset) })
+        const rows = (page.applications ?? []) as Application[]
+        for (const application of rows) {
+          if (!idsToExport.has(application.id)) continue
+          processed += 1
+          setExportProgress(`Solicitud ${processed} de ${idsToExport.size}: descargando adjuntos…`)
+          const attachments = await getAttachments(application, downloadApplicationFile)
+          const pdf = await buildApplicationPdf(application, attachments, `${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`)
+          const folder = zip.folder(`solicitud-${application.id.slice(0, 8)}-${safeFilename(application.full_name)}`)
+          if (!folder) throw new Error('No se pudo preparar una carpeta del archivo ZIP.')
+          folder.file('solicitud.pdf', pdf)
+          const attachmentsFolder = folder.folder('adjuntos')
+          attachments.forEach(({ document, bytes }, index) => {
+            attachmentsFolder?.file(`${String(index + 1).padStart(2, '0')}-${safeFilename(document.original_filename)}`, bytes)
+          })
+        }
+        hasNextPage = Boolean(page.has_more)
+        offset = Number(page.next_offset ?? offset + rows.length)
+      }
+      if (processed !== idsToExport.size) throw new Error('Algunas solicitudes ya no están disponibles en este filtro. Volvé a seleccionarlas e intentá de nuevo.')
+      setExportProgress(`Comprimiendo ${processed} solicitudes en un ZIP…`)
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' }, (metadata) => {
+        setExportProgress(`Comprimiendo ZIP… ${Math.round(metadata.percent)}%`)
+      })
+      downloadBlob(blob, `Solicitudes-Prestamos-Variety-${new Date().toISOString().slice(0, 10)}.zip`)
+      setNotice(`Se descargó el ZIP con ${processed} solicitudes, cada una con su PDF y sus archivos originales.`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo generar el archivo ZIP. Si seleccionaste muchas solicitudes, dividí la descarga en grupos más pequeños.')
+    } finally {
+      setExporting(false)
+      setExportProgress('')
+    }
   }
 
   const whatsAppMessage = whatsAppApplicant
@@ -442,7 +559,7 @@ export default function AdminApp() {
       </header>
       <section className="admin-heading">
         <div><p className="admin-kicker">GESTIÓN DE CRÉDITOS</p><h1>Solicitudes de préstamos</h1><p>Revisá los datos y documentos antes de tomar una decisión.</p></div>
-        <select aria-label="Filtrar solicitudes" value={filter} onChange={(event) => setFilter(event.target.value)}>
+        <select aria-label="Filtrar solicitudes" value={filter} onChange={(event) => { setSelectedIds(new Set()); setFilter(event.target.value) }}>
           <option value="pending">Pendientes</option><option value="under_review">En revisión</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="all">Todas</option>
         </select>
       </section>
@@ -468,14 +585,35 @@ export default function AdminApp() {
       <div className="admin-layout">
         <section className="admin-list" aria-label="Listado de solicitudes">
           <div className="admin-list-header"><b>{applications.length} solicitudes cargadas</b><button onClick={() => void loadApplications()} disabled={loading}>Actualizar</button></div>
+          <div className="bulk-export-toolbar">
+            <b>{selectedIds.size} seleccionadas</b>
+            <div className="bulk-export-actions">
+              <button onClick={selectVisibleApplications} disabled={!applications.length || loading || exporting}>Seleccionar cargadas</button>
+              <button onClick={() => void selectAllFilteredApplications()} disabled={loading || exporting}>Seleccionar todas del filtro</button>
+              <button onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size || exporting}>Limpiar</button>
+              <button className="bulk-download-button" onClick={() => void downloadSelectedZip()} disabled={!selectedIds.size || exporting}>
+                {exporting ? 'Preparando…' : `Descargar ZIP (${selectedIds.size})`}
+              </button>
+            </div>
+            {exportProgress && <p role="status">{exportProgress}</p>}
+            <small>“Todas del filtro” incluye todas las páginas; elegí “Todas” arriba para abarcar todos los estados.</small>
+          </div>
           {loading && <p className="admin-empty">Cargando…</p>}
           {!loading && applications.length === 0 && <p className="admin-empty">No hay solicitudes en este filtro.</p>}
           {applications.map((application) => (
-            <button className={'application-row ' + (selected?.id === application.id ? 'is-selected' : '')} key={application.id} onClick={() => { setSelected(application); setDecisionNote('') }}>
-              <span className={'status-dot status-' + application.status} />
-              <span className="application-summary"><b>{application.full_name}</b><small>DNI {application.dni} · {new Date(application.created_at).toLocaleDateString('es-AR')}</small></span>
-              <strong>{money(application.loan_amount)}</strong>
-            </button>
+            <div className="application-list-item" key={application.id}>
+              <input
+                type="checkbox"
+                aria-label={`Seleccionar solicitud de ${application.full_name}`}
+                checked={selectedIds.has(application.id)}
+                onChange={() => toggleApplication(application.id)}
+              />
+              <button className={'application-row ' + (selected?.id === application.id ? 'is-selected' : '')} onClick={() => { setSelected(application); setDecisionNote('') }}>
+                <span className={'status-dot status-' + application.status} />
+                <span className="application-summary"><b>{application.full_name}</b><small>DNI {application.dni} · {new Date(application.created_at).toLocaleDateString('es-AR')}</small></span>
+                <strong>{money(application.loan_amount)}</strong>
+              </button>
+            </div>
           ))}
           {hasMore && <div className="admin-list-header"><button onClick={() => void loadMoreApplications()} disabled={loading}>{loading ? 'Cargando…' : 'Cargar más solicitudes'}</button></div>}
         </section>
@@ -484,7 +622,7 @@ export default function AdminApp() {
             <>
               <div className="detail-header">
                 <div><span className={'status-badge status-' + selected.status}>{statusLabel[selected.status] || selected.status}</span><h2>{selected.full_name}</h2><p>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</p></div>
-                <button className="pdf-download-button" onClick={downloadApplicationPdf}>Descargar PDF</button>
+                <button className="pdf-download-button" onClick={() => void downloadApplicationPdf()} disabled={exporting}>{exporting ? 'Preparando PDF…' : 'Descargar PDF'}</button>
               </div>
               <div className="detail-subsection">
                 <h3>Datos personales</h3>
