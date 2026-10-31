@@ -14,6 +14,8 @@ type Document = {
 
 type Application = ExportApplication & {
   status: string
+  archived_at: string | null
+  archived_by: string | null
   decided_at: string | null
   decided_by: string | null
   admin_notes: string | null
@@ -111,8 +113,6 @@ export default function AdminApp() {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [decisionNote, setDecisionNote] = useState('')
-  const [hasMore, setHasMore] = useState(false)
-  const [nextOffset, setNextOffset] = useState(0)
   const [whatsAppApplicant, setWhatsAppApplicant] = useState<Application | null>(null)
   const [whatsAppNumber, setWhatsAppNumber] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
@@ -139,36 +139,28 @@ export default function AdminApp() {
     setLoading(true)
     setError('')
     setDecisionNote('')
+    setApplications([])
     try {
-      const data = await callAdmin({ action: 'list', status: filter, offset: '0' })
-      const rows = (data.applications ?? []) as Application[]
+      const rows: Application[] = []
+      let offset = 0
+      let hasNextPage = true
+      while (hasNextPage) {
+        const data = await callAdmin({ action: 'list', status: filter, offset: String(offset) })
+        const pageRows = (data.applications ?? []) as Application[]
+        rows.push(...pageRows)
+        hasNextPage = Boolean(data.has_more)
+        const nextOffset = Number(data.next_offset ?? offset + pageRows.length)
+        if (hasNextPage && nextOffset <= offset) throw new Error('La carga de solicitudes no pudo avanzar. Actualizá el panel e intentá de nuevo.')
+        offset = nextOffset
+      }
       setApplications(rows)
       setSelected((current) => current ? rows.find((row) => row.id === current.id) ?? null : null)
-      setHasMore(Boolean(data.has_more))
-      setNextOffset(Number(data.next_offset ?? rows.length))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las solicitudes.')
     } finally {
       setLoading(false)
     }
   }, [session, filter, callAdmin])
-
-  const loadMoreApplications = useCallback(async () => {
-    if (!session || loading || !hasMore) return
-    setLoading(true)
-    setError('')
-    try {
-      const data = await callAdmin({ action: 'list', status: filter, offset: String(nextOffset) })
-      const rows = (data.applications ?? []) as Application[]
-      setApplications((current) => [...current, ...rows])
-      setHasMore(Boolean(data.has_more))
-      setNextOffset(Number(data.next_offset ?? nextOffset + rows.length))
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudieron cargar más solicitudes.')
-    } finally {
-      setLoading(false)
-    }
-  }, [session, loading, hasMore, filter, nextOffset, callAdmin])
 
   useEffect(() => {
     void loadApplications()
@@ -287,6 +279,33 @@ export default function AdminApp() {
     }
   }
 
+  const setApplicationArchived = async (archived: boolean) => {
+    if (!selected) return
+    const action = archived ? 'archive' : 'unarchive'
+    const prompt = archived
+      ? `¿Archivar la solicitud de ${selected.full_name}? Podés encontrarla después en “Archivadas” y restaurarla.`
+      : `¿Restaurar la solicitud de ${selected.full_name} desde el archivo?`
+    if (!window.confirm(prompt)) return
+    setLoading(true)
+    setError('')
+    setNotice('')
+    try {
+      await callAdmin({ action, application_id: selected.id })
+      setSelectedIds((current) => {
+        const next = new Set(current)
+        next.delete(selected.id)
+        return next
+      })
+      setSelected(null)
+      setNotice(archived ? 'La solicitud quedó archivada y se conserva en Supabase.' : 'La solicitud volvió a la lista activa.')
+      await loadApplications()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo actualizar el archivo de la solicitud.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const whatsAppDigits = whatsAppNumber.replace(/\D/g, '')
 
   const downloadBlob = (blob: Blob, filename: string) => {
@@ -360,31 +379,6 @@ export default function AdminApp() {
       applications.forEach((application) => allVisibleSelected ? next.delete(application.id) : next.add(application.id))
       return next
     })
-  }
-
-  const selectAllFilteredApplications = async () => {
-    if (loading || exporting) return
-    setLoading(true)
-    setError('')
-    setNotice('Buscando todas las solicitudes del filtro…')
-    try {
-      const ids: string[] = []
-      let offset = 0
-      let hasNextPage = true
-      while (hasNextPage) {
-        const page = await callAdmin({ action: 'list', status: filter, offset: String(offset) })
-        const rows = (page.applications ?? []) as Application[]
-        ids.push(...rows.map((application) => application.id))
-        hasNextPage = Boolean(page.has_more)
-        offset = Number(page.next_offset ?? offset + rows.length)
-      }
-      setSelectedIds(new Set(ids))
-      setNotice(`Se seleccionaron ${ids.length} solicitudes. Podés descargarlas juntas en un ZIP.`)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudieron seleccionar todas las solicitudes.')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const downloadSelectedZip = async () => {
@@ -561,7 +555,7 @@ export default function AdminApp() {
       <section className="admin-heading">
         <div><p className="admin-kicker">GESTIÓN DE CRÉDITOS</p><h1>Solicitudes de préstamos</h1><p>Revisá los datos y documentos antes de tomar una decisión.</p></div>
         <select aria-label="Filtrar solicitudes" value={filter} onChange={(event) => { setSelectedIds(new Set()); setFilter(event.target.value) }}>
-          <option value="pending">Pendientes</option><option value="under_review">En revisión</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="all">Todas</option>
+          <option value="pending">Pendientes</option><option value="under_review">En revisión</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option><option value="all">Todas</option><option value="archived">Archivadas</option>
         </select>
       </section>
       {(error || notice) && <p className={error ? 'admin-error' : 'admin-message'} role="status">{error || notice}</p>}
@@ -589,15 +583,14 @@ export default function AdminApp() {
           <div className="bulk-export-toolbar">
             <b>{selectedIds.size} seleccionadas</b>
             <div className="bulk-export-actions">
-              <button onClick={selectVisibleApplications} disabled={!applications.length || loading || exporting}>Seleccionar cargadas</button>
-              <button onClick={() => void selectAllFilteredApplications()} disabled={loading || exporting}>Seleccionar todas del filtro</button>
+              <button onClick={selectVisibleApplications} disabled={!applications.length || loading || exporting}>Seleccionar todas del filtro</button>
               <button onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size || exporting}>Limpiar</button>
-              <button className="bulk-download-button" onClick={() => void downloadSelectedZip()} disabled={!selectedIds.size || exporting}>
-                {exporting ? 'Preparando…' : `Descargar ZIP (${selectedIds.size})`}
+              <button className="bulk-download-button" onClick={() => void downloadSelectedZip()} disabled={!selectedIds.size || exporting} aria-label={exporting ? 'Preparando el archivo ZIP' : 'Descargar solicitudes seleccionadas en ZIP'} title={exporting ? 'Preparando el archivo ZIP' : 'Descargar solicitudes seleccionadas en ZIP'}>
+                <img className="download-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="" aria-hidden="true" />
               </button>
             </div>
             {exportProgress && <p role="status">{exportProgress}</p>}
-            <small>“Todas del filtro” incluye todas las páginas; elegí “Todas” arriba para abarcar todos los estados.</small>
+            <small>Se muestran todas las solicitudes del filtro. Para incluir archivadas, elegí “Archivadas” arriba.</small>
           </div>
           {loading && <p className="admin-empty">Cargando…</p>}
           {!loading && applications.length === 0 && <p className="admin-empty">No hay solicitudes en este filtro.</p>}
@@ -611,19 +604,23 @@ export default function AdminApp() {
               />
               <button className={'application-row ' + (selected?.id === application.id ? 'is-selected' : '')} onClick={() => { setSelected(application); setDecisionNote('') }}>
                 <span className={'status-dot status-' + application.status} />
-                <span className="application-summary"><b>{application.full_name}</b><small>DNI {application.dni} · {new Date(application.created_at).toLocaleDateString('es-AR')}</small></span>
+                <span className="application-summary"><b>{application.full_name}</b><small>DNI {application.dni} · {new Date(application.created_at).toLocaleDateString('es-AR')}{application.archived_at ? ' · Archivada' : ''}</small></span>
                 <strong>{money(application.loan_amount)}</strong>
               </button>
             </div>
           ))}
-          {hasMore && <div className="admin-list-header"><button onClick={() => void loadMoreApplications()} disabled={loading}>{loading ? 'Cargando…' : 'Cargar más solicitudes'}</button></div>}
         </section>
         <section className="application-detail">
           {!selected ? <div className="admin-empty detail-placeholder">Elegí una solicitud para ver sus datos y documentación.</div> : (
             <>
               <div className="detail-header">
-                <div><span className={'status-badge status-' + selected.status}>{statusLabel[selected.status] || selected.status}</span><h2>{selected.full_name}</h2><p>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</p></div>
-                <button className="pdf-download-button" onClick={() => void downloadApplicationPdf()} disabled={exporting}>{exporting ? 'Preparando PDF…' : 'Descargar PDF'}</button>
+                <div><span className={'status-badge status-' + selected.status}>{statusLabel[selected.status] || selected.status}</span>{selected.archived_at && <span className="archived-badge">Archivada</span>}<h2>{selected.full_name}</h2><p>Solicitud {selected.id} · {new Date(selected.created_at).toLocaleString('es-AR')}</p></div>
+                <div className="detail-header-actions">
+                  <button className="archive-button" onClick={() => void setApplicationArchived(!selected.archived_at)} disabled={loading}>{selected.archived_at ? 'Restaurar' : 'Archivar'}</button>
+                  <button className="pdf-download-button" onClick={() => void downloadApplicationPdf()} disabled={exporting} aria-label={exporting ? 'Preparando PDF' : 'Descargar PDF de esta solicitud'} title={exporting ? 'Preparando PDF' : 'Descargar PDF de esta solicitud'}>
+                    <img className="download-logo" src={`${import.meta.env.BASE_URL}prestamos-variety-logo.jpg`} alt="" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
               <div className="detail-subsection">
                 <h3>Datos personales</h3>

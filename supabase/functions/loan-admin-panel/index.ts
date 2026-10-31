@@ -244,6 +244,27 @@ Deno.serve(async (request: Request) => {
     return respond({ success: true, notification }, 200, origin);
   }
 
+  if (body.action === "archive" || body.action === "unarchive") {
+    const id = typeof body.application_id === "string" ? body.application_id : "";
+    if (!id) return respond({ error: "La solicitud indicada no es válida." }, 400, origin);
+    const isArchiving = body.action === "archive";
+    let update = admin.from("loan_applications")
+      .update(isArchiving
+        ? { archived_at: new Date().toISOString(), archived_by: authData.user.id }
+        : { archived_at: null, archived_by: null })
+      .eq("id", id);
+    update = isArchiving ? update.is("archived_at", null) : update.not("archived_at", "is", null);
+    const { data, error } = await update.select("id").maybeSingle();
+    if (error) {
+      console.error("No se pudo actualizar el archivo de la solicitud:", error.message);
+      return respond({ error: "No se pudo actualizar el archivo de la solicitud." }, 500, origin);
+    }
+    if (!data) return respond({ error: isArchiving
+      ? "La solicitud ya está archivada o no existe. Actualizá el listado."
+      : "La solicitud no está archivada o no existe. Actualizá el listado." }, 409, origin);
+    return respond({ success: true }, 200, origin);
+  }
+
   if (body.action === "delete") {
     const id = typeof body.application_id === "string" ? body.application_id : "";
     if (!id) return respond({ error: "La solicitud indicada no es válida." }, 400, origin);
@@ -290,7 +311,7 @@ Deno.serve(async (request: Request) => {
 
   if (body.action !== "list") return respond({ error: "La operación solicitada no es válida." }, 400, origin);
   const status = body.status;
-  if (status !== "pending" && status !== "under_review" && status !== "approved" && status !== "rejected" && status !== "all") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
+  if (status !== "pending" && status !== "under_review" && status !== "approved" && status !== "rejected" && status !== "all" && status !== "archived") return respond({ error: "El filtro indicado no es válido." }, 400, origin);
 
   const rawOffset = body.offset === undefined ? 0 : Number(body.offset);
   if (!Number.isSafeInteger(rawOffset) || rawOffset < 0) return respond({ error: "La página solicitada no es válida." }, 400, origin);
@@ -301,7 +322,11 @@ Deno.serve(async (request: Request) => {
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + PAGE_SIZE);
-  if (status !== "all") query = query.eq("status", status);
+  if (status === "archived") query = query.not("archived_at", "is", null);
+  else {
+    query = query.is("archived_at", null);
+    if (status !== "all") query = query.eq("status", status);
+  }
   const { data: applications, error: listError } = await query;
   if (listError) {
     console.error("No se pudieron leer solicitudes:", listError.message);
