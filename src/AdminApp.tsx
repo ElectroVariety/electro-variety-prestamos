@@ -481,6 +481,7 @@ export default function AdminApp() {
             <PdfField label="Teléfono alternativo" value={selected.alternate_phone} />
             <PdfField label="Vínculo con el contacto alternativo" value={selected.alternate_phone_relationship} />
             <PdfField label="¿Vino recomendado por alguien?" value={selected.has_referrer ? 'Sí' : 'No'} />
+            <PdfField label="¿Es cliente de Electro Variety?" value={typeof selected.is_electro_variety_client === 'boolean' ? selected.is_electro_variety_client ? 'Sí' : 'No' : 'No informado'} />
             {selected.has_referrer && <>
               <PdfField label="Nombre de quien recomendó" value={selected.referrer_full_name} />
               <PdfField label="Teléfono de quien recomendó" value={selected.referrer_phone} />
@@ -634,6 +635,7 @@ export default function AdminApp() {
                   <div><small>Teléfono alternativo</small><b>{selected.alternate_phone}</b></div>
                   <div><small>Vínculo con el contacto alternativo</small><b>{selected.alternate_phone_relationship}</b></div>
                   <div><small>¿Vino recomendado?</small><b>{selected.has_referrer ? 'Sí' : 'No'}</b></div>
+                  <div><small>¿Es cliente de Electro Variety?</small><b>{typeof selected.is_electro_variety_client === 'boolean' ? selected.is_electro_variety_client ? 'Sí' : 'No' : 'No informado'}</b></div>
                   {selected.has_referrer && <>
                     <div><small>Nombre de quien recomendó</small><b>{selected.referrer_full_name || '—'}</b></div>
                     <div><small>Teléfono de quien recomendó</small><b>{selected.referrer_phone || '—'}</b></div>

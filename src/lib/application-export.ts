@@ -17,6 +17,7 @@ export type ExportApplication = {
   dni_updated: boolean
   phone: string
   has_referrer: boolean
+  is_electro_variety_client: boolean | null
   referrer_full_name: string | null
   referrer_phone: string | null
   referrer_relationship: string | null
@@ -316,6 +317,7 @@ export async function buildApplicationPdf(
     ['Telefono alternativo', application.alternate_phone],
     ['Vinculo con el contacto alternativo', application.alternate_phone_relationship],
     ['Vino recomendado por alguien', state(application.has_referrer)],
+    ['Es cliente de Electro Variety', typeof application.is_electro_variety_client === 'boolean' ? state(application.is_electro_variety_client) : 'No informado'],
     ...(application.has_referrer ? [
       ['Nombre de quien recomendo', application.referrer_full_name],
       ['Telefono de quien recomendo', application.referrer_phone],

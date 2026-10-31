@@ -134,6 +134,10 @@ Deno.serve(async (req: Request) => {
   if (rawHasReferrer !== undefined && typeof rawHasReferrer !== "boolean") {
     return respond({ error: "La respuesta sobre la recomendación no es válida." }, 400, origin);
   }
+  const isElectroVarietyClient = body.is_electro_variety_client;
+  if (typeof isElectroVarietyClient !== "boolean") {
+    return respond({ error: "Indicá si sos cliente de Electro Variety." }, 400, origin);
+  }
   const referrerFullName = textField(body, "referrer_full_name", 150, hasReferrer);
   const referrerPhone = textField(body, "referrer_phone", 40, hasReferrer);
   const referrerRelationship = textField(body, "referrer_relationship", 100, hasReferrer);
@@ -343,6 +347,7 @@ Deno.serve(async (req: Request) => {
     dni_updated: dniUpdated,
     phone,
     has_referrer: hasReferrer,
+    is_electro_variety_client: isElectroVarietyClient,
     referrer_full_name: hasReferrer ? referrerFullName : null,
     referrer_phone: hasReferrer ? referrerPhone : null,
     referrer_relationship: hasReferrer ? referrerRelationship : null,

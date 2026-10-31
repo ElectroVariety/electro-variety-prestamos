@@ -232,6 +232,7 @@ function Section({
 function App() {
   const [housing, setHousing] = useState('')
   const [referrerStatus, setReferrerStatus] = useState('')
+  const [electroVarietyClientStatus, setElectroVarietyClientStatus] = useState('')
   const [serviceOwner, setServiceOwner] = useState('')
   const [serviceTypes, setServiceTypes] = useState<string[]>([])
   const [hasDebts, setHasDebts] = useState('')
@@ -350,6 +351,7 @@ function App() {
       dni_updated: value('dni_updated') === 'yes',
       phone: value('phone'),
       has_referrer: referrerStatus === 'yes',
+      is_electro_variety_client: electroVarietyClientStatus === 'yes',
       referrer_full_name: referrerStatus === 'yes' ? value('referrer_full_name') : '',
       referrer_phone: referrerStatus === 'yes' ? value('referrer_phone') : '',
       referrer_relationship: referrerStatus === 'yes' ? value('referrer_relationship') : '',
@@ -410,6 +412,7 @@ function App() {
       setUploadResetKey((current) => current + 1)
       setHousing('')
       setReferrerStatus('')
+      setElectroVarietyClientStatus('')
       setServiceOwner('')
       setServiceTypes([])
       setHasDebts('')
@@ -518,6 +521,33 @@ function App() {
                   value="no"
                   checked={referrerStatus === 'no'}
                   onChange={() => setReferrerStatus('no')}
+                  required
+                />
+                <span>No</span>
+              </label>
+            </div>
+          </Field>
+
+          <Field label="¿Sos cliente de Electro Variety?">
+            <div className="choice-list horizontal">
+              <label className="choice">
+                <input
+                  type="radio"
+                  name="is_electro_variety_client"
+                  value="yes"
+                  checked={electroVarietyClientStatus === 'yes'}
+                  onChange={() => setElectroVarietyClientStatus('yes')}
+                  required
+                />
+                <span>Sí</span>
+              </label>
+              <label className="choice">
+                <input
+                  type="radio"
+                  name="is_electro_variety_client"
+                  value="no"
+                  checked={electroVarietyClientStatus === 'no'}
+                  onChange={() => setElectroVarietyClientStatus('no')}
                   required
                 />
                 <span>No</span>
